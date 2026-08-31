@@ -34,8 +34,10 @@ describe.skipIf(!runDb)('TournamentsService (intégration DB)', () => {
   });
 
   afterAll(async () => {
+    await prisma.registration.deleteMany({ where: { tournament: { organizationId: orgId } } });
     await prisma.tournamentCategory.deleteMany({ where: { tournament: { organizationId: orgId } } });
     await prisma.tournament.deleteMany({ where: { organizationId: orgId } });
+    await prisma.team.deleteMany({ where: { organizationId: orgId } });
     await prisma.organization.deleteMany({ where: { id: orgId } });
     await prisma.user.deleteMany({ where: { id: userId } });
     await prisma.$disconnect();
@@ -59,10 +61,25 @@ describe.skipIf(!runDb)('TournamentsService (intégration DB)', () => {
     await expect(service.publish(orgId, tournamentId)).rejects.toThrow();
   });
 
-  it('publie après ajout d’une catégorie', async () => {
-    await service.createCategory(orgId, tournamentId, { name: 'Senior' } as never);
+  it('publie après catégorie + 2 équipes validées', async () => {
+    const cat = await service.createCategory(orgId, tournamentId, { name: 'Senior' } as never);
+    // 2 équipes inscrites et validées (critère "teams" activé en Phase 5).
+    for (let i = 0; i < 2; i++) {
+      const team = await prisma.team.create({
+        data: { organizationId: orgId, name: `Eq ${suffix}-${i}`, slug: `eq-${suffix}-${i}` },
+      });
+      await prisma.registration.create({
+        data: {
+          tournamentId,
+          categoryId: cat.id,
+          teamId: team.id,
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+      });
+    }
     const { items } = await service.getChecklist(orgId, tournamentId);
-    expect(items.find((i) => i.key === 'categories')?.met).toBe(true);
+    expect(items.find((i) => i.key === 'teams')?.met).toBe(true);
     const published = await service.publish(orgId, tournamentId);
     expect(published.status).toBe(TournamentStatus.PUBLISHED);
   });

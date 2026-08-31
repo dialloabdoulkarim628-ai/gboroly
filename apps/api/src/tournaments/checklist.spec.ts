@@ -6,19 +6,20 @@ import {
   type ChecklistInput,
 } from './checklist';
 
+// Base "publiable" : infos complètes + 1 catégorie + 2 équipes validées.
 const base: ChecklistInput = {
   hasName: true,
   hasSport: true,
   hasCountry: true,
   categoriesCount: 1,
-  approvedTeamsCount: 0,
+  approvedTeamsCount: 2,
   competitionsConfigured: 0,
   fieldsCount: 0,
   scheduledMatchesCount: 0,
 };
 
 describe('checklist de publication', () => {
-  it('publiable si infos complètes + au moins une catégorie', () => {
+  it('publiable si infos + catégorie + 2 équipes validées', () => {
     const items = buildPublicationChecklist(base);
     expect(isPublishable(items)).toBe(true);
     expect(unmetRequired(items)).toHaveLength(0);
@@ -36,8 +37,14 @@ describe('checklist de publication', () => {
     expect(unmetRequired(items).map((i) => i.key)).toContain('info');
   });
 
-  it('les critères des phases suivantes ne bloquent pas encore', () => {
-    // équipes/format/terrains/calendrier absents mais non bloquants en Phase 4
+  it('non publiable avec moins de 2 équipes validées (activé Phase 5)', () => {
+    const items = buildPublicationChecklist({ ...base, approvedTeamsCount: 1 });
+    expect(isPublishable(items)).toBe(false);
+    expect(unmetRequired(items).map((i) => i.key)).toContain('teams');
+  });
+
+  it('format/terrains/calendrier ne bloquent pas encore', () => {
+    // competitions/fields/schedule à 0 mais non bloquants en Phase 5
     expect(isPublishable(buildPublicationChecklist(base))).toBe(true);
   });
 });

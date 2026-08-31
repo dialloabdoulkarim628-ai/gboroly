@@ -1,6 +1,21 @@
 # Changelog — Gboroly
 
-## [Phase 4] — Tournois — en cours
+## [Phase 5] — Équipes, Joueurs, Inscriptions — en cours
+
+### Ajouté
+- Module `teams` : référentiel org (create/list/get/update/status/soft-delete) + **roster** `TeamPlayer` (ajout/liste/màj/retrait).
+  - Règle de cohérence : **un joueur ne peut être ACTIF que dans une équipe par tournoi** (`PLAYER_ALREADY_REGISTERED`).
+  - Bornes d'effectif : `canAddPlayer`/`meetsMinimum` (module pur testé) → `SQUAD_MAX` au-delà du max de catégorie.
+- Module `players` : référentiel org (CRUD + soft-delete).
+- Module `registrations` : inscription équipe↔catégorie, unicité `(categoryId, teamId)` (`TEAM_ALREADY_REGISTERED`), `approve`/`reject`/`withdraw` ; statut d'inscription et de paiement séparés.
+- Checklist de publication : critère **« équipes validées (min 2) » activé (bloquant)**.
+- RBAC : `team.manage`, `player.manage`, `registration.review`. Schémas Zod team/player/registration.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, tests 36 (dont roster) + 13 d'intégration DB gated.
+- Smoke test HTTP : 20 routes (équipes/joueurs/inscriptions) mappées, 401 sans token.
+
+## [Phase 4] — Tournois
 
 ### Ajouté
 - Module `tournaments` : create (DRAFT), list/get **scopés multi-tenant** (org via `X-Organization-Id`), update, visibilité, cancel, soft-delete.

@@ -41,7 +41,7 @@ export function buildPublicationChecklist(input: ChecklistInput): ChecklistItem[
       key: 'teams',
       label: 'Équipes validées (min. 2)',
       met: input.approvedTeamsCount >= 2,
-      required: false, // Phase 5
+      required: true, // activé en Phase 5
     },
     {
       key: 'format',
