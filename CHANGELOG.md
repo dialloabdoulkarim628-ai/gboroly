@@ -1,6 +1,21 @@
 # Changelog — Gboroly
 
-## [Phase 1] — Fondations — en cours
+## [Phase 2] — Authentification — en cours
+
+### Ajouté
+- Module `auth` (NestJS) : register, login, logout, refresh (rotation), forgot/reset password, verify-email, verify-phone (OTP).
+- Hash **Argon2id** (`@node-rs/argon2`) ; access token **JWT** court + **refresh rotatif révocable** (haché en base).
+- `JwtAuthGuard` global (sécurité par défaut) + `@Public`, `@CurrentUser` ; scaffold `PermissionsGuard` + `@RequirePermissions` (RBAC effectif en Phase 3).
+- `ZodValidationPipe` + schémas d'auth étendus (`@gboroly/validation`).
+- Modules purs testables `auth/lib/{password,tokens}` + tests unitaires (10) ; test d'intégration DB gated (`RUN_DB_TESTS`).
+- `PrismaService` tolérant à l'absence de DB au démarrage (connexion lazy).
+- Doc [AUTH.md](docs/AUTH.md).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, tests 23 (10 auth + 5 utils + 5 moteur + 3 validation).
+- Smoke test HTTP : `/health` 200 · `/auth/me` sans token 401 · register invalide 400.
+
+## [Phase 1] — Fondations
 
 ### Ajouté
 - Monorepo pnpm + Turborepo (`apps/*`, `packages/*`).

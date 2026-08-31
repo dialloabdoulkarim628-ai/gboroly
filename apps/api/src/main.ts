@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -15,7 +14,7 @@ async function bootstrap() {
     origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(','),
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Validation via ZodValidationPipe appliqué par route (schémas @gboroly/validation).
 
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port);
