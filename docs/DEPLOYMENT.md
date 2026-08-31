@@ -22,20 +22,29 @@ pnpm --filter @gboroly/database seed
 pnpm dev            # turbo run dev (web + api + worker)
 ```
 
-## 3. Infrastructure cible (décision D8 — à confirmer)
+## 3. Infrastructure cible (décision D8 — ✅ ARRÊTÉE)
 
-Piste par défaut (conteneurs, cloud moderne) :
+Stack confirmée (2026-08-31) : **Supabase + Vercel + conteneurs + GitHub** (l'architecture NestJS est conservée ; Supabase sert de Postgres managé + Storage).
 
-| Composant | Option par défaut |
+| Composant | Choix |
 |---|---|
-| Web (Next.js) | Vercel (ou conteneur) |
-| API (NestJS) | PaaS conteneurs (Railway / Render / Fly.io) |
-| Worker (BullMQ) | Même PaaS, process séparé |
-| PostgreSQL | Managé (Neon / Supabase / RDS) |
-| Redis | Managé (Upstash / autre) |
-| S3 | Cloudflare R2 / AWS S3 |
+| Web (Next.js) | **Vercel** |
+| API (NestJS) | **Hébergeur conteneurs** (Railway / Render / Fly.io) — serveur persistant (WebSocket) |
+| Worker (BullMQ) | Même hébergeur, **process séparé** |
+| PostgreSQL | **Supabase** (Postgres managé) |
+| Cache / Jobs | **Redis Upstash** |
+| Object storage | **Supabase Storage** (endpoint S3-compatible) |
+| CI/CD | **GitHub Actions** |
 
-À arbitrer selon budget et disponibilité en Afrique de l'Ouest (latence). **Question ouverte D8.**
+> ⚠️ **Vercel est serverless** : il héberge le **web Next.js**, mais **pas** l'API NestJS persistante (Socket.IO) ni le worker BullMQ → ceux-ci vont sur un hébergeur conteneurs. Supabase Auth **n'est pas** utilisé : l'auth reste custom NestJS (Argon2id/JWT).
+
+### Prisma + Supabase (important)
+
+Supabase place un **pooler PgBouncer** devant Postgres. Prisma nécessite **deux** URLs :
+- `DATABASE_URL` → **poolée** (port **6543**, `?pgbouncer=true&connection_limit=1`) : utilisée par l'app à l'exécution.
+- `DIRECT_URL` → **directe** (port **5432**) : utilisée par `prisma migrate`/introspection.
+
+Le `datasource` déclare `url` + `directUrl` (voir `schema.prisma`). Migrations : `prisma migrate deploy` (CI/prod) via `DIRECT_URL`.
 
 ## 4. Variables d'environnement
 

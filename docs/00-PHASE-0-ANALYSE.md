@@ -89,10 +89,12 @@ Le cahier propose 3 modèles (paiement par tournoi / abonnement / commission).
 **Recommandation :** ✅ MVP **gratuit pour l'organisateur** + suivi des **paiements d'inscription (manuel)**. Les tables `Subscription`/`commission` sont **prévues** mais non activées. Décider du modèle facturé plus tard.
 *Question ouverte : quel modèle veux-tu tester en premier sur le marché ivoirien ?*
 
-### D8 — Hébergement / déploiement cible
-Non spécifié dans les docs.
-**Recommandation :** conteneurs Docker déployables sur un cloud moderne. Piste par défaut : **Postgres managé (Neon/Supabase/RDS) + Redis managé (Upstash) + S3 (Cloudflare R2 / AWS S3) + API/Worker sur un PaaS conteneurs (Railway/Render/Fly.io) + Web sur Vercel**. À confirmer selon budget/pays. Détail dans [DEPLOYMENT.md](./DEPLOYMENT.md).
-*Question ouverte : as-tu une préférence d'hébergeur / un budget cible ?*
+### D8 — Hébergement / déploiement cible ✅ ARRÊTÉE (2026-08-31)
+**Stack confirmée : Supabase + Vercel + conteneurs + GitHub** (architecture NestJS conservée).
+- **Supabase** = Postgres managé (+ Storage S3-compatible). Prisma via pooler → `DATABASE_URL` (6543) + `DIRECT_URL` (5432).
+- **Vercel** = web Next.js. **API NestJS + worker BullMQ** = hébergeur conteneurs (Railway/Render/Fly). **Redis** = Upstash. **CI** = GitHub Actions.
+- **Auth** : reste **custom NestJS** (Argon2id/JWT) — Supabase Auth non utilisé.
+Détail dans [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ### D9 — Gestion des sessions : JWT stateless vs sessions serveur
 **Recommandation :** ✅ **Access token JWT court (15 min) + Refresh token rotatif** stocké en base (`RefreshToken` révocable), cookie `httpOnly`+`Secure`+`SameSite`. Permet révocation et « déconnexion partout ».
