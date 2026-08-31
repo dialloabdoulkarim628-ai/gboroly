@@ -1,6 +1,21 @@
 # Changelog — Gboroly
 
-## [Phase 5] — Équipes, Joueurs, Inscriptions — en cours
+## [Phase 6] — ⭐ Competition Engine — en cours
+
+### Ajouté (package pur `competition-engine`, 26 tests)
+- **Groupes** : distribution "serpent", fixtures de poules, classement par groupe.
+- **Single elimination** : seeding standard, byes automatiques, `advanceKnockout`, `resolveWinner` (score → tirs au but).
+- **Qualifications** configurables : N par groupe + meilleurs Nes (repêchage cross-groupe).
+- **Group → Playoffs** : orchestration poules → qualifiés → phases finales (testée de bout en bout jusqu'au champion).
+- **Double élimination** (4/8) : winner/loser brackets + grande finale, `advanceDoubleElimination` (déroulé complet testé).
+- **Forfait** : score administratif + impact classement. **Bracket view** pour affichage.
+- Types moteur enrichis (`PlannedGroup/Round`, `CompetitionPlan`, `QualificationConfig`, `BracketNode`, refs de slots + chaînage).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **57 tests** (moteur 26) + 13 d'intégration DB gated.
+- Idempotence des fonctions d'avancement (bracket recalculable sans divergence).
+
+## [Phase 5] — Équipes, Joueurs, Inscriptions
 
 ### Ajouté
 - Module `teams` : référentiel org (create/list/get/update/status/soft-delete) + **roster** `TeamPlayer` (ajout/liste/màj/retrait).

@@ -1,5 +1,5 @@
 // Types du Competition Engine (données sérialisables, sans dépendance framework).
-import type { FormatType, MatchStatus, TieBreaker } from './enums.js';
+import type { FormatType, MatchStatus, RoundType, TieBreaker } from './enums.js';
 
 /** Référence légère d'une équipe participante (une Registration dans le domaine). */
 export interface TeamRef {
@@ -18,9 +18,16 @@ export interface RankingRules {
   drawSeed?: string;
 }
 
+/** Règle de qualification : combien d'équipes se qualifient par groupe + meilleurs Nes. */
+export interface QualificationConfig {
+  qualifyPerGroup: number;
+  /** Nombre de meilleurs "Nes de groupe" repêchés (ex. meilleurs 3es). 0 par défaut. */
+  bestOfRank?: { rank: number; count: number };
+}
+
 export interface CompetitionConfig {
   type: FormatType;
-  /** Ex. { groups: 4, perGroup: 4, qualifyPerGroup: 2, knockout: ['QF','SF','F'] } */
+  /** Ex. { groups: 4, perGroup: 4, doubleRound: false } */
   formatConfig: Record<string, unknown>;
   rules: RankingRules;
 }
@@ -38,11 +45,41 @@ export interface EngineMatch {
   groupId?: string;
   homeTeamId?: string;
   awayTeamId?: string;
-  /** Slots non résolus du bracket, ex. "winner:QF1" ou "group:A#2". */
+  /** Slots non résolus, ex. "seed:3", "group:A#2", "winner:KO-R1-m0", "loser:KO-R1-m0". */
   homeSourceRef?: string;
   awaySourceRef?: string;
   status: MatchStatus;
   result?: MatchResult;
+  /** Vainqueur résolu (bye/forfait) sans passer par un score. */
+  winnerRef?: string;
+  resultType?: 'NORMAL' | 'FORFEIT' | 'WALKOVER' | 'AWARDED';
+  forfeitTeamId?: string;
+  /** Chaînage bracket : match aval + slot ('home' | 'away') alimenté par le vainqueur. */
+  feedsIntoMatchId?: string;
+  feedsIntoSlot?: 'home' | 'away';
+  /** Pour double élimination : où va le perdant. */
+  loserFeedsIntoMatchId?: string;
+  loserFeedsIntoSlot?: 'home' | 'away';
+  order?: number;
+}
+
+export interface PlannedGroup {
+  id: string;
+  name: string;
+  teamIds: string[];
+}
+
+export interface PlannedRound {
+  id: string;
+  type: RoundType;
+  name: string;
+  order: number;
+}
+
+export interface CompetitionPlan {
+  rounds: PlannedRound[];
+  groups: PlannedGroup[];
+  matches: EngineMatch[];
 }
 
 export interface StandingRow {
@@ -64,5 +101,16 @@ export interface Qualification {
   teamId: string;
   fromGroupId?: string;
   fromPosition: number;
-  toSlot: string; // ex. "QF1:home"
+  label: string; // ex. "A1", "B2", "3e-meilleur"
+}
+
+export interface BracketNode {
+  matchId: string;
+  roundName: string;
+  roundOrder: number;
+  homeTeamId?: string;
+  awayTeamId?: string;
+  homeLabel: string;
+  awayLabel: string;
+  winnerTeamId?: string;
 }

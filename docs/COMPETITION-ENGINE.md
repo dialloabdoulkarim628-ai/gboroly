@@ -165,6 +165,27 @@ describe Recalculate: idempotent (2 exécutions = même état)
 
 Voir [TESTING.md](./TESTING.md) pour la stratégie complète.
 
+## 11bis. Implémentation (Phase 6)
+
+Modules du package `packages/competition-engine` (tous purs, 26 tests) :
+
+| Fichier | Contenu |
+|---|---|
+| `fixtures.ts` | Round robin (cercle), byes pour nombre impair |
+| `standings.ts` | Calcul du classement (dérivé des matchs terminés) |
+| `tiebreakers.ts` | Départages configurables (points > diff > BP > confrontation directe > fair-play > tirage seedé) |
+| `groups.ts` | Distribution "serpent" en N groupes, fixtures de poules, classement par groupe |
+| `knockout.ts` | `seedOrder` standard, single elimination, byes, `advanceKnockout`, `resolveWinner` (score → tirs au but) |
+| `qualifications.ts` | `determineQualifiedTeams` : N/groupe + meilleurs Nes (repêchage cross-groupe) |
+| `group-to-playoffs.ts` | Orchestration poules → qualifiés → phases finales |
+| `double-elimination.ts` | Winner/Loser brackets + grande finale (tailles 4 et 8) |
+| `forfeit.ts` | `applyForfeit` : score administratif, impact classement |
+| `bracket.ts` | `buildBracketView` : vue d'affichage (labels de slots non résolus) |
+
+**Chaînage bracket** : `EngineMatch.homeSourceRef/awaySourceRef` encodent l'origine d'un slot (`seed:3`, `group:A#2`, `winner:<id>`, `loser:<id>`) ; `feedsIntoMatchId/Slot` (et `loserFeedsInto*` en double élim) chaînent les matchs ; `advanceKnockout`/`advanceDoubleElimination` résolvent les slots dès qu'un vainqueur est connu — **idempotents**.
+
+**Limites assumées (MVP)** : double élimination pour 4/8 équipes (tailles courantes) ; le seeding group→playoffs est une heuristique (croisement vainqueurs/2es) que l'organisateur peut ajuster manuellement (automatisation avec contrôle). Head-to-head restreint aux paires ; sous-groupes >2 à égalité = amélioration ultérieure.
+
 ## 12. Ce que le moteur ne fait PAS
 
 - Pas d'accès base / réseau / date système (l'heure est passée en paramètre → tests déterministes).
