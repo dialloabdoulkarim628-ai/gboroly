@@ -1,6 +1,20 @@
 # Changelog — Gboroly
 
-## [Phase 3] — Organisations & RBAC — en cours
+## [Phase 4] — Tournois — en cours
+
+### Ajouté
+- Module `tournaments` : create (DRAFT), list/get **scopés multi-tenant** (org via `X-Organization-Id`), update, visibilité, cancel, soft-delete.
+- **Publication avec checklist** (module pur `checklist.ts` testé) : critères `info` + `categories` bloquants dès la Phase 4, critères équipes/format/terrains/calendrier prêts (activés aux phases suivantes). `CHECKLIST_INCOMPLETE` si non rempli.
+- **Catégories** : create/list/update/delete (RBAC `category.manage`).
+- **Duplication** : réutilise config + catégories + branding, statut → DRAFT, **ne copie jamais** résultats/matchs/paiements.
+- Machine à états + verrou de modification (`MODIFICATION_LOCKED` sur statuts ONGOING/COMPLETED/ARCHIVED/CANCELLED).
+- Sérialisation JSON des `BigInt` (montants) ; schémas Zod tournoi/catégorie/visibilité.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, tests 31 (dont 4 checklist) + 10 d'intégration DB gated.
+- Smoke test HTTP : 14 routes tournois/catégories mappées, 401 sans token.
+
+## [Phase 3] — Organisations & RBAC
 
 ### Ajouté
 - Matrice RBAC canonique dans `@gboroly/types` (`PERMISSIONS`, `ROLE_PERMISSIONS`, `permissionsForRole`) — source unique de vérité.
