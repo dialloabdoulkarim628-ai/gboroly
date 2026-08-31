@@ -1,25 +1,74 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { REQUIRE_PERMISSIONS_KEY } from '../../common/decorators';
+import type { Request } from 'express';
+import { REQUIRE_MEMBERSHIP_KEY, REQUIRE_PERMISSIONS_KEY } from '../../common/decorators';
+import { RbacService, type Membership } from '../../rbac/rbac.service';
 
 /**
- * Scaffold RBAC. L'application effective des permissions dépend du contexte
- * d'organisation (membership → rôle → permissions), introduit en PHASE 3.
- * Ici : si aucune permission n'est requise, on laisse passer ; la résolution
- * des permissions de l'utilisateur sera branchée avec le module organizations.
+ * RBAC effectif (PHASE 3). Résout l'organisation active depuis :
+ *   1. le paramètre de route `:orgId` (routes org-scopées),
+ *   2. sinon l'en-tête `X-Organization-Id`.
+ * Charge le membership de l'utilisateur, vérifie que les permissions requises
+ * sont incluses dans celles de son rôle, et attache `request.membership`.
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly rbac: RbacService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<string[]>(REQUIRE_PERMISSIONS_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!required || required.length === 0) return true;
-    // PHASE 3 : charger les permissions effectives de request.user dans l'org active
-    // et vérifier l'inclusion. Pour l'instant, seules les routes sans exigence passent.
-    return false;
+    const membershipOnly = this.reflector.getAllAndOverride<boolean>(REQUIRE_MEMBERSHIP_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const needsPerms = (required?.length ?? 0) > 0;
+    if (!needsPerms && !membershipOnly) return true;
+
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user?: { id: string }; membership?: Membership }>();
+
+    const userId = request.user?.id;
+    if (!userId) throw new ForbiddenException(err('UNAUTHENTICATED', 'Authentification requise'));
+
+    const organizationId =
+      (request.params as Record<string, string | undefined>)?.orgId ??
+      (request.headers['x-organization-id'] as string | undefined);
+
+    if (!organizationId) {
+      throw new ForbiddenException(err('ORGANIZATION_REQUIRED', 'Organisation active requise'));
+    }
+
+    const membership = await this.rbac.resolveMembership(userId, organizationId);
+    if (!membership) {
+      throw new ForbiddenException(err('NOT_A_MEMBER', 'Accès refusé à cette organisation'));
+    }
+
+    if (needsPerms) {
+      const missing = required!.filter((p) => !membership.permissions.has(p));
+      if (missing.length > 0) {
+        throw new ForbiddenException(
+          err('INSUFFICIENT_PERMISSION', `Permission requise: ${missing.join(', ')}`),
+        );
+      }
+    }
+
+    request.membership = membership;
+    return true;
   }
+}
+
+function err(code: string, message: string) {
+  return { error: { code, message } };
 }

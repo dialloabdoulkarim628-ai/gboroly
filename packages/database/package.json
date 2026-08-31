@@ -25,6 +25,7 @@
     "schema": "prisma/schema.prisma"
   },
   "dependencies": {
+    "@gboroly/types": "workspace:*",
     "@prisma/client": "^6.1.0"
   },
   "devDependencies": {

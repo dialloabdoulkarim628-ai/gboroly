@@ -68,6 +68,16 @@ admin.platform (super admin)
 4. Endpoints publics : lecture seule, tournois `PUBLISHED`, données filtrées.
 5. Les identifiants exposés publiquement sont des **slugs** (pas d'énumération d'ID inter-tenant).
 
+## 5bis. Implémentation (Phase 3)
+
+- **Source unique de vérité** : `packages/types/src/rbac.ts` — `PERMISSIONS` + `ROLE_PERMISSIONS` (matrice) + `permissionsForRole()`. Consommée par le **seed** (attache les `RolePermission`) et par le **guard** (permissions effectives).
+- **`RbacService`** (`apps/api/src/rbac`) — `resolveMembership(userId, orgId)` → `{ organizationId, roleKey, permissions:Set }` ; `getUserOrganizations(userId)`.
+- **`PermissionsGuard`** (effectif) — résout l'org active depuis le paramètre de route **`:orgId`** puis, à défaut, l'en-tête **`X-Organization-Id`** ; charge le membership, vérifie l'inclusion des permissions requises, attache `request.membership`.
+- **Décorateurs** : `@RequirePermissions('member.manage')`, `@RequireMembership()` (membre actif sans permission précise), `@ActiveMembership()` (injection du contexte org).
+- **Organisations** (`apps/api/src/organizations`) : `POST /organizations` (créateur = OWNER), `GET /organizations/mine`, `GET/PATCH /organizations/:orgId`, membres (`GET`, `PATCH role`, `DELETE`), invitations (`POST`/`GET`/`DELETE` + `POST /invitations/accept`). Garde-fou : impossible de retirer/rétrograder le **dernier propriétaire**.
+- **SUPER_ADMIN plateforme (cross-tenant)** : espace `/admin` dédié → **Phase 13** ; ici le RBAC est **org-scopé**.
+- **Portée fine** (REFEREE/TEAM_MANAGER limités à leurs matchs/équipe) : affinée aux **Phases 5–7** ; Phase 3 applique le niveau permission.
+
 ## 6. Audit
 
 Toute action sensible (voir `AuditAction` dans [DATABASE.md](./DATABASE.md)) écrit un `AuditLog` : `userId, organizationId, action, entityType, entityId, oldValue, newValue, ip, userAgent, createdAt`. Particulièrement : scores, validations d'équipe, suppressions de joueur, paiements, déplacements de match, publication.

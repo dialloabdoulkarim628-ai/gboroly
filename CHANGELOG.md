@@ -1,6 +1,20 @@
 # Changelog — Gboroly
 
-## [Phase 2] — Authentification — en cours
+## [Phase 3] — Organisations & RBAC — en cours
+
+### Ajouté
+- Matrice RBAC canonique dans `@gboroly/types` (`PERMISSIONS`, `ROLE_PERMISSIONS`, `permissionsForRole`) — source unique de vérité.
+- Seed enrichi : attache les permissions aux 9 rôles système (`RolePermission`).
+- Module `organizations` : création (créateur = OWNER), lecture/màj, membres (rôle, retrait), invitations (créer/lister/révoquer/accepter). Garde-fou dernier propriétaire.
+- `RbacService` (résolution membership → permissions) + `RbacModule` global.
+- `PermissionsGuard` **effectif** : org active via `:orgId` ou `X-Organization-Id`, vérification des permissions, `request.membership`.
+- Décorateurs `@RequireMembership`, `@ActiveMembership` ; schémas Zod org/invitation.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, tests 27 (dont 4 RBAC) + 5 d'intégration DB gated.
+- Smoke test HTTP : 10 routes org mappées, 401 sans/mauvais token.
+
+## [Phase 2] — Authentification
 
 ### Ajouté
 - Module `auth` (NestJS) : register, login, logout, refresh (rotation), forgot/reset password, verify-email, verify-phone (OTP).
