@@ -1,0 +1,31 @@
+{
+  "name": "gboroly",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gboroly — The African Sports Tournament OS",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "eslint .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "pnpm --filter @gboroly/database generate",
+    "db:migrate": "pnpm --filter @gboroly/database migrate:dev",
+    "db:seed": "pnpm --filter @gboroly/database seed",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@gboroly/config": "workspace:*",
+    "eslint": "^9.17.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3"
+  }
+}

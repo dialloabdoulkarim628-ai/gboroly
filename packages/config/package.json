@@ -1,0 +1,21 @@
+{
+  "name": "@gboroly/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tailwind-preset": "./tailwind-preset.cjs",
+    "./eslint": "./eslint.config.mjs"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "tailwind-preset.cjs",
+    "eslint.config.mjs"
+  ],
+  "dependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "typescript-eslint": "^8.18.1"
+  }
+}

@@ -1,0 +1,949 @@
+// Gboroly — schéma Prisma. Aligné sur docs/DATABASE.md.
+// PostgreSQL = source de vérité. Fichiers en S3 (jamais en base).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── Enums ───────────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MemberStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PHONE_OTP
+  PASSWORD_RESET
+}
+
+enum RoleKey {
+  SUPER_ADMIN
+  ORGANIZATION_OWNER
+  ORGANIZATION_ADMIN
+  FINANCE_MANAGER
+  TOURNAMENT_MANAGER
+  MATCH_OPERATOR
+  COMMUNICATION_MANAGER
+  REFEREE
+  TEAM_MANAGER
+}
+
+enum TournamentStatus {
+  DRAFT
+  READY
+  PUBLISHED
+  ONGOING
+  COMPLETED
+  ARCHIVED
+  CANCELLED
+}
+
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum TeamStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum TeamPlayerStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum RegistrationStatus {
+  DRAFT
+  INVITED
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+enum FormatType {
+  ROUND_ROBIN
+  GROUP_STAGE
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  GROUP_TO_PLAYOFFS
+  CUSTOM
+}
+
+enum RoundType {
+  ROUND_ROBIN
+  GROUP_STAGE
+  KNOCKOUT
+  PLACEMENT
+  FINAL
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  PAUSED
+  FINISHED
+  POSTPONED
+  CANCELLED
+  FORFEIT
+}
+
+enum ResultType {
+  NORMAL
+  FORFEIT
+  WALKOVER
+  AWARDED
+}
+
+enum MatchEventType {
+  GOAL
+  OWN_GOAL
+  YELLOW_CARD
+  RED_CARD
+  SUBSTITUTION
+  INJURY
+  PENALTY
+  PENALTY_MISS
+  FOUL
+  OTHER
+}
+
+enum OfficialRole {
+  MAIN
+  ASSISTANT
+  FOURTH
+}
+
+enum SponsorLevel {
+  MAIN
+  GOLD
+  SILVER
+  PARTNER
+}
+
+enum ComplaintStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+enum PaymentMethodType {
+  CASH
+  WAVE
+  ORANGE_MONEY
+  MTN_MONEY
+  MOOV_MONEY
+  CARD
+  MANUAL
+  OTHER
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum MediaOwnerType {
+  TOURNAMENT
+  TEAM
+  PLAYER
+  SPONSOR
+  ORGANIZATION
+  USER
+}
+
+// ────────────────────── 1. Identité / Org / RBAC ──────────────────────
+
+model User {
+  id              String    @id @default(uuid())
+  firstName       String
+  lastName        String
+  email           String?   @unique
+  phone           String?   @unique
+  passwordHash    String?
+  avatarUrl       String?
+  status          UserStatus @default(ACTIVE)
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberships   OrganizationMember[]
+  refreshTokens RefreshToken[]
+  authTokens    AuthToken[]
+  auditLogs     AuditLog[]
+}
+
+model Organization {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  logoUrl     String?
+  description String?
+  country     String
+  city        String?
+  timezone    String    @default("Africa/Abidjan")
+  currency    String    @default("XOF")
+  status      OrgStatus @default(ACTIVE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  members     OrganizationMember[]
+  invitations Invitation[]
+  roles       Role[]
+  tournaments Tournament[]
+  teams       Team[]
+  players     Player[]
+  referees    Referee[]
+  payments    Payment[]
+  subscriptions Subscription[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  roleId         String
+  status         MemberStatus @default(ACTIVE)
+  invitedByUserId String?
+  joinedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+}
+
+model Role {
+  id             String  @id @default(uuid())
+  organizationId String?
+  key            RoleKey
+  name           String
+  isSystem       Boolean @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization?    @relation(fields: [organizationId], references: [id])
+  members      OrganizationMember[]
+  permissions  RolePermission[]
+
+  @@index([organizationId])
+}
+
+model Permission {
+  id          String @id @default(uuid())
+  key         String @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model Invitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  email          String?
+  phone          String?
+  roleId         String
+  token          String           @unique
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  createdByUserId String
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuthToken {
+  id         String        @id @default(uuid())
+  userId     String
+  type       AuthTokenType
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int           @default(0)
+  createdAt  DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+}
+
+// ─────────────────────── 2. Sport & configuration ───────────────────────
+
+model Sport {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  name         String
+  defaultRules Json
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  tournaments     Tournament[]
+  formatTemplates FormatTemplate[]
+}
+
+model FormatTemplate {
+  id             String   @id @default(uuid())
+  sportId        String?
+  organizationId String?
+  key            String
+  name           String
+  teamsCount     Int
+  config         Json
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  sport Sport? @relation(fields: [sportId], references: [id])
+
+  @@index([sportId])
+}
+
+// ─────────────────────────── 3. Tournoi ───────────────────────────
+
+model Tournament {
+  id                String           @id @default(uuid())
+  organizationId    String
+  sportId           String
+  name              String
+  slug              String           @unique
+  description       String?
+  logoUrl           String?
+  bannerUrl         String?
+  country           String
+  city              String?
+  venueDescription  String?
+  startDate         DateTime?
+  endDate           DateTime?
+  startTime         String?
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  maxTeams          Int?
+  registrationFee   BigInt?
+  currency          String           @default("XOF")
+  timezone          String           @default("Africa/Abidjan")
+  visibility        Visibility       @default(PRIVATE)
+  status            TournamentStatus @default(DRAFT)
+  createdByUserId   String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  sport         Sport               @relation(fields: [sportId], references: [id])
+  categories    TournamentCategory[]
+  venues        Venue[]
+  referees      Referee[]
+  sponsors      Sponsor[]
+  registrations Registration[]
+  competitions  Competition[]
+  matches       Match[]
+  announcements Announcement[]
+  payments      Payment[]
+  complaints    Complaint[]
+
+  @@index([organizationId, status])
+  @@index([sportId])
+}
+
+model TournamentCategory {
+  id              String   @id @default(uuid())
+  tournamentId    String
+  name            String
+  slug            String
+  registrationFee BigInt?
+  rulesConfig     Json?
+  maxTeams        Int?
+  minSquad        Int?
+  maxSquad        Int?
+  status          String   @default("ACTIVE")
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  tournament    Tournament     @relation(fields: [tournamentId], references: [id])
+  competitions  Competition[]
+  registrations Registration[]
+
+  @@index([tournamentId])
+}
+
+model Venue {
+  id           String   @id @default(uuid())
+  tournamentId String
+  name         String
+  address      String?
+  lat          Float?
+  lng          Float?
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  fields     Field[]
+
+  @@index([tournamentId])
+}
+
+model Field {
+  id                 String   @id @default(uuid())
+  venueId            String
+  tournamentId       String
+  name               String
+  availabilityConfig Json?
+  capacity           Int?
+  createdAt          DateTime @default(now())
+
+  venue   Venue   @relation(fields: [venueId], references: [id])
+  matches Match[]
+
+  @@index([tournamentId])
+}
+
+model Referee {
+  id                 String   @id @default(uuid())
+  organizationId     String
+  tournamentId       String?
+  firstName          String
+  lastName           String
+  phone              String?
+  availabilityConfig Json?
+  status             String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  tournament   Tournament?     @relation(fields: [tournamentId], references: [id])
+  officials    MatchOfficial[]
+
+  @@index([tournamentId])
+}
+
+model Sponsor {
+  id           String       @id @default(uuid())
+  tournamentId String
+  name         String
+  logoUrl      String?
+  websiteUrl   String?
+  level        SponsorLevel @default(PARTNER)
+  order        Int          @default(0)
+  createdAt    DateTime     @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@index([tournamentId])
+}
+
+// ─────────────────────── 4. Équipes & joueurs ───────────────────────
+
+model Team {
+  id              String     @id @default(uuid())
+  organizationId  String
+  name            String
+  shortName       String?
+  slug            String
+  logoUrl         String?
+  captainPlayerId String?
+  managerUserId   String?
+  phone           String?
+  status          TeamStatus @default(ACTIVE)
+  createdAt       DateTime   @default(now())
+  deletedAt       DateTime?
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  teamPlayers   TeamPlayer[]
+  registrations Registration[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+model Player {
+  id             String    @id @default(uuid())
+  organizationId String
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime?
+  photoUrl       String?
+  phone          String?
+  position       String?
+  nationality    String?
+  privacyConfig  Json?
+  status         String    @default("ACTIVE")
+  createdAt      DateTime  @default(now())
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  teamPlayers  TeamPlayer[]
+
+  @@index([organizationId])
+}
+
+model TeamPlayer {
+  id           String           @id @default(uuid())
+  teamId       String
+  playerId     String
+  tournamentId String?
+  categoryId   String?
+  jerseyNumber Int?
+  position     String?
+  status       TeamPlayerStatus @default(ACTIVE)
+  joinedAt     DateTime         @default(now())
+  leftAt       DateTime?
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([teamId, playerId, tournamentId])
+  @@index([playerId])
+}
+
+model Registration {
+  id            String             @id @default(uuid())
+  tournamentId  String
+  categoryId    String
+  teamId        String
+  seed          Int?
+  status        RegistrationStatus @default(DRAFT)
+  paymentStatus PaymentStatus      @default(UNPAID)
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  rejectionReason String?
+  createdAt     DateTime           @default(now())
+  deletedAt     DateTime?
+
+  tournament  Tournament         @relation(fields: [tournamentId], references: [id])
+  category    TournamentCategory @relation(fields: [categoryId], references: [id])
+  team        Team               @relation(fields: [teamId], references: [id])
+  groupTeams  GroupTeam[]
+  standings   Standing[]
+  homeMatches Match[]            @relation("HomeTeam")
+  awayMatches Match[]            @relation("AwayTeam")
+  payments    Payment[]
+
+  @@unique([categoryId, teamId])
+  @@index([tournamentId])
+  @@index([categoryId, status])
+}
+
+// ──────────────────────── 5. Compétition ────────────────────────
+
+model Competition {
+  id           String     @id @default(uuid())
+  categoryId   String
+  tournamentId String
+  formatType   FormatType
+  formatConfig Json
+  status       String     @default("DRAFT")
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  category   TournamentCategory @relation(fields: [categoryId], references: [id])
+  tournament Tournament         @relation(fields: [tournamentId], references: [id])
+  rounds     Round[]
+  standings  Standing[]
+
+  @@index([categoryId])
+}
+
+model Round {
+  id                String    @id @default(uuid())
+  competitionId     String
+  roundType         RoundType
+  name              String
+  order             Int
+  status            String    @default("PENDING")
+  qualificationRules Json?
+  createdAt         DateTime  @default(now())
+
+  competition Competition @relation(fields: [competitionId], references: [id])
+  groups      Group[]
+  matches     Match[]
+
+  @@index([competitionId])
+}
+
+model Group {
+  id        String   @id @default(uuid())
+  roundId   String
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  round      Round       @relation(fields: [roundId], references: [id])
+  groupTeams GroupTeam[]
+  matches    Match[]
+  standings  Standing[]
+
+  @@index([roundId])
+}
+
+model GroupTeam {
+  id             String @id @default(uuid())
+  groupId        String
+  registrationId String
+  seed           Int?
+  position       Int?
+
+  group        Group        @relation(fields: [groupId], references: [id])
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  @@unique([groupId, registrationId])
+}
+
+model Standing {
+  id             String   @id @default(uuid())
+  competitionId  String
+  groupId        String?
+  registrationId String
+  played         Int      @default(0)
+  wins           Int      @default(0)
+  draws          Int      @default(0)
+  losses         Int      @default(0)
+  goalsFor       Int      @default(0)
+  goalsAgainst   Int      @default(0)
+  goalDifference Int      @default(0)
+  points         Int      @default(0)
+  fairPlayPoints Int      @default(0)
+  position       Int      @default(0)
+  updatedAt      DateTime @updatedAt
+
+  competition  Competition  @relation(fields: [competitionId], references: [id])
+  group        Group?       @relation(fields: [groupId], references: [id])
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  @@unique([competitionId, groupId, registrationId])
+  @@index([competitionId, groupId])
+}
+
+// ─────────────────────────── 6. Matchs ───────────────────────────
+
+model Match {
+  id              String      @id @default(uuid())
+  version         Int         @default(0)
+  tournamentId    String
+  categoryId      String
+  competitionId   String
+  roundId         String
+  groupId         String?
+  homeTeamId      String?
+  awayTeamId      String?
+  homeSourceRef   Json?
+  awaySourceRef   Json?
+  venueId         String?
+  fieldId         String?
+  refereeId       String?
+  scheduledAt     DateTime?
+  status          MatchStatus @default(SCHEDULED)
+  homeScore       Int?
+  awayScore       Int?
+  homePenalties   Int?
+  awayPenalties   Int?
+  winnerRegistrationId String?
+  forfeitTeamId   String?
+  resultType      ResultType?
+  feedsIntoMatchId String?
+  feedsIntoSlot   String?
+  notes           String?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  postponedFrom   DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+
+  tournament  Tournament    @relation(fields: [tournamentId], references: [id])
+  round       Round         @relation(fields: [roundId], references: [id])
+  group       Group?        @relation(fields: [groupId], references: [id])
+  field       Field?        @relation(fields: [fieldId], references: [id])
+  homeTeam    Registration? @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Registration? @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  events      MatchEvent[]
+  officials   MatchOfficial[]
+  complaints  Complaint[]
+
+  @@index([tournamentId, scheduledAt])
+  @@index([categoryId, roundId])
+  @@index([status])
+  @@index([fieldId, scheduledAt])
+}
+
+model MatchEvent {
+  id             String         @id @default(uuid())
+  matchId        String
+  registrationId String
+  playerId       String?
+  type           MatchEventType
+  minute         Int?
+  additionalTime Int?
+  metadata       Json?
+  createdByUserId String
+  createdAt      DateTime       @default(now())
+  voidedAt       DateTime?
+
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@index([matchId])
+  @@index([playerId])
+}
+
+model MatchOfficial {
+  id        String       @id @default(uuid())
+  matchId   String
+  refereeId String
+  role      OfficialRole @default(MAIN)
+
+  match   Match   @relation(fields: [matchId], references: [id])
+  referee Referee @relation(fields: [refereeId], references: [id])
+
+  @@unique([matchId, refereeId])
+}
+
+model Complaint {
+  id             String          @id @default(uuid())
+  tournamentId   String
+  matchId        String?
+  teamId         String?
+  subject        String
+  body           String
+  status         ComplaintStatus @default(OPEN)
+  createdByUserId String
+  createdAt      DateTime        @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  match      Match?     @relation(fields: [matchId], references: [id])
+
+  @@index([tournamentId])
+}
+
+// ──────────────────── 7. Paiements & facturation ────────────────────
+
+model Payment {
+  id                   String            @id @default(uuid())
+  organizationId       String
+  tournamentId         String
+  registrationId       String?
+  teamId               String?
+  grossAmount          BigInt
+  platformFee          BigInt            @default(0)
+  paymentProcessingFee BigInt            @default(0)
+  organizerAmount      BigInt            @default(0)
+  platformAmount       BigInt            @default(0)
+  currency             String            @default("XOF")
+  status               PaymentStatus     @default(UNPAID)
+  method               PaymentMethodType @default(CASH)
+  provider             String?
+  providerTxnRef       String?
+  idempotencyKey       String            @unique
+  receiptRef           String?
+  paidAt               DateTime?
+  createdByUserId      String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  tournament   Tournament           @relation(fields: [tournamentId], references: [id])
+  registration Registration?        @relation(fields: [registrationId], references: [id])
+  transactions PaymentTransaction[]
+
+  @@unique([provider, providerTxnRef])
+  @@index([tournamentId, status])
+}
+
+model PaymentTransaction {
+  id              String   @id @default(uuid())
+  paymentId       String
+  type            String
+  providerPayload Json
+  amount          BigInt?
+  createdAt       DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+}
+
+model Subscription {
+  id             String           @id @default(uuid())
+  organizationId String
+  plan           SubscriptionPlan @default(FREE)
+  status         String           @default("ACTIVE")
+  currentPeriodEnd DateTime?
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+// ──────────────────── 8. Communication & médias ────────────────────
+
+model Announcement {
+  id             String    @id @default(uuid())
+  tournamentId   String
+  title          String
+  body           String
+  publishedAt    DateTime?
+  createdByUserId String
+  createdAt      DateTime  @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@index([tournamentId])
+}
+
+model Notification {
+  id             String              @id @default(uuid())
+  userId         String?
+  organizationId String?
+  channel        NotificationChannel
+  type           String
+  payload        Json
+  status         NotificationStatus  @default(PENDING)
+  sentAt         DateTime?
+  readAt         DateTime?
+  createdAt      DateTime            @default(now())
+
+  @@index([userId, status])
+}
+
+model Media {
+  id             String         @id @default(uuid())
+  organizationId String?
+  ownerType      MediaOwnerType
+  ownerId        String
+  url            String
+  key            String
+  mimeType       String
+  size           Int
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+
+  @@index([ownerType, ownerId])
+}
+
+// ─────────────────────────── 9. Système ───────────────────────────
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  organizationId String?
+  action         String
+  entityType     String
+  entityId       String
+  oldValue       Json?
+  newValue       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model OutboxEvent {
+  id            String       @id @default(uuid())
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now())
+  processedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([status, availableAt])
+}
