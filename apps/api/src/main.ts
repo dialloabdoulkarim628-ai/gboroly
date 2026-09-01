@@ -21,9 +21,10 @@ async function bootstrap() {
   });
   // Validation via ZodValidationPipe appliqué par route (schémas @gboroly/validation).
 
-  const port = Number(process.env.API_PORT ?? 4000);
-  await app.listen(port);
-  console.log(`🟢 Gboroly API sur http://localhost:${port}${prefix}`);
+  // PaaS (Railway/Render/Fly) injectent PORT ; fallback API_PORT puis 4000 en local.
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🟢 Gboroly API sur le port ${port} (préfixe ${prefix})`);
 }
 
 void bootstrap();

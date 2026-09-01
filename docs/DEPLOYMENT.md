@@ -83,3 +83,87 @@ Erreurs applicatives, latence API, erreurs DB, échecs de queue, échecs de paie
 ## 8. Sauvegarde / restauration
 
 Backups automatiques base managée + test régulier de restauration. Rétention définie. Soft-delete + purge auditée.
+
+---
+
+# 🚀 Runbook de déploiement (production)
+
+## Vue d'ensemble
+
+| Composant | Cible | Notes |
+|---|---|---|
+| **Web** (Next.js) | **Vercel** | build depuis `apps/web` (monorepo) |
+| **API** (NestJS) | **Conteneur** (Railway / Render / Fly.io) | `apps/api/Dockerfile` ; serveur persistant (SSE) |
+| **Base** | **Supabase** (déjà en place) | migrations Prisma versionnées |
+| **Worker / Redis** | *non requis au MVP* | l'outbox tourne dans l'API ; à activer si des jobs BullMQ sont ajoutés |
+
+## 1. Migrations Prisma (versionnées)
+
+Le projet est passé de `db push` à des **migrations versionnées** (`packages/database/prisma/migrations/`).
+
+**Baseliner la base Supabase existante** (elle a déjà le schéma via `db push`) — une seule fois :
+```bash
+# avec DATABASE_URL/DIRECT_URL de prod dans l'environnement
+pnpm --filter @gboroly/database exec prisma migrate resolve --applied 20260901000000_init
+```
+Ensuite, à chaque release, appliquer les migrations en attente :
+```bash
+pnpm --filter @gboroly/database exec prisma migrate deploy
+```
+> Pour une **base neuve** (nouveau projet Supabase, base vide), sauter le `resolve` : `migrate deploy` crée tout.
+
+## 2. Déployer l'API (conteneur)
+
+1. **Build/push de l'image** (contexte = racine du repo) :
+   ```bash
+   docker build -f apps/api/Dockerfile -t gboroly-api .
+   ```
+   La plupart des PaaS (Railway/Render/Fly) buildent directement depuis le repo : indiquer **Dockerfile path = `apps/api/Dockerfile`** et **contexte = racine**.
+2. **Variables d'environnement** (voir checklist §5).
+3. **Release command** (avant démarrage) : `pnpm --filter @gboroly/database exec prisma migrate deploy`.
+4. **Port** : la plateforme fournit `PORT` ; l'API l'écoute automatiquement (`main.ts`). Healthcheck : `GET /api/v1/health`.
+
+## 3. Déployer le Web (Vercel)
+
+1. Importer le repo GitHub dans Vercel.
+2. **Root Directory** = `apps/web` (Vercel détecte le workspace pnpm et installe depuis la racine).
+3. Framework **Next.js** (auto). Build : `next build` (auto).
+4. **Variables d'environnement** :
+   - `NEXT_PUBLIC_API_URL` = `https://<api-domain>/api/v1` (client — pages publiques + SSE)
+   - `API_BASE_URL` = `https://<api-domain>/api/v1` (server — SSR/ISR)
+
+## 4. Câblage inter-services
+
+- **CORS de l'API** : mettre `CORS_ORIGINS=https://<vercel-domain>` (l'API restreint les origines).
+- **Realtime SSE** : `NEXT_PUBLIC_API_URL` doit pointer vers l'API (le navigateur ouvre `EventSource` dessus).
+
+## 5. Checklist variables d'environnement (prod)
+
+**API (conteneur)**
+```
+DATABASE_URL          # Supabase poolé (6543, pgbouncer=true&connection_limit=1)
+DIRECT_URL            # Supabase direct (5432) — migrations
+JWT_SECRET            # long, aléatoire
+JWT_REFRESH_SECRET    # long, aléatoire (si utilisé)
+JWT_ACCESS_TTL=900
+JWT_REFRESH_TTL=2592000
+CORS_ORIGINS          # https://<vercel-domain>
+NODE_ENV=production
+# Optionnels (features futures) : REDIS_URL, S3_*, EMAIL_*, WHATSAPP_*, PAYMENT_PROVIDER_KEYS, PLATFORM_FEE_BPS
+```
+**Web (Vercel)** : `NEXT_PUBLIC_API_URL`, `API_BASE_URL`.
+
+> 🔐 Les secrets se saisissent **dans les dashboards** (Vercel / hébergeur), jamais dans le repo. `.env` reste local et gitignoré.
+
+## 6. Vérifications post-déploiement
+
+- `GET https://<api>/api/v1/health` → 200.
+- `GET https://<api>/api/v1/public/discover` → 200 (liste JSON).
+- Ouvrir `https://<vercel-domain>/discover` → tournois affichés.
+- Créer un tournoi (dashboard), le publier, vérifier `/t/<slug>` + mise à jour live.
+
+## 7. CI/CD
+
+- **CI** (`.github/workflows/ci.yml`) : lint, typecheck, `migrate deploy` (Postgres éphémère), seed, tests, build — à chaque push/PR sur `main`.
+- **Web** : Vercel auto-déploie à chaque push sur `main` (via son intégration Git).
+- **API** : brancher l'auto-déploiement du PaaS sur `main`, avec le release command `migrate deploy`.

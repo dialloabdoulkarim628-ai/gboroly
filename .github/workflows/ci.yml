@@ -66,8 +66,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Apply schema to test database
-        run: pnpm --filter @gboroly/database exec prisma db push --skip-generate
+      - name: Apply migrations to test database
+        run: pnpm --filter @gboroly/database exec prisma migrate deploy
 
       - name: Seed database (roles, permissions, sport)
         run: pnpm --filter @gboroly/database seed

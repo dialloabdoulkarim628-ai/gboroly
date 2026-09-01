@@ -1,0 +1,19 @@
+# Reconstruits dans l'image — ne pas copier depuis l'hôte.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/tsconfig.tsbuildinfo
+
+# Historique & CI
+.git
+.github
+
+# Secrets — ne JAMAIS embarquer dans l'image
+.env
+.env.*
+
+# Divers
+**/*.log
+docs
