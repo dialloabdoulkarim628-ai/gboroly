@@ -2,13 +2,31 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { buildBracketView } from '@gboroly/competition-engine';
 import { toEngineMatch } from '../matches/engine-mapper';
 import { PrismaService } from '../prisma/prisma.service';
+import { StatsService } from '../stats/stats.service';
 
 /** Statuts d'un tournoi visibles publiquement. */
 const PUBLIC_STATUSES = ['PUBLISHED', 'ONGOING', 'COMPLETED', 'ARCHIVED'] as const;
 
 @Injectable()
 export class PublicService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stats: StatsService,
+  ) {}
+
+  async getSponsors(slug: string) {
+    const t = await this.resolve(slug);
+    return this.prisma.sponsor.findMany({
+      where: { tournamentId: t.id },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, logoUrl: true, websiteUrl: true, level: true },
+    });
+  }
+
+  async getScorers(slug: string) {
+    const t = await this.resolve(slug);
+    return this.stats.computeTopScorers(t.id);
+  }
 
   async getTournament(slug: string) {
     const t = await this.resolve(slug);

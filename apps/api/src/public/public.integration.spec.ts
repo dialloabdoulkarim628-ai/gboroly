@@ -5,12 +5,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaClient } from '@gboroly/database';
 import { PublicService } from './public.service';
+import { StatsService } from '../stats/stats.service';
 
 const runDb = process.env.RUN_DB_TESTS === '1';
 
 describe.skipIf(!runDb)('PublicService (visibilité)', () => {
   const prisma = new PrismaClient();
-  const service = new PublicService(prisma as never);
+  const service = new PublicService(prisma as never, new StatsService(prisma as never));
   const tag = `pub_${Date.now()}`;
   let orgId = '';
   let userId = '';

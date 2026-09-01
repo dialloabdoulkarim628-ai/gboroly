@@ -1,6 +1,17 @@
 # Changelog — Gboroly
 
-## [Phase 12] — Paiements — en cours
+## [Phase 13] — Fonctionnalités avancées — en cours
+
+### Ajouté
+- **Sponsors** : CRUD (`POST/GET /tournaments/:id/sponsors`, `PATCH/DELETE /sponsors/:id`, RBAC `sponsor.manage`) + niveaux MAIN/GOLD/SILVER/PARTNER ; exposition **publique** `GET /public/tournaments/:slug/sponsors`.
+- **Import CSV équipes** (`csv.ts`/`import-teams.ts` purs, testés) : parseur CSV robuste (guillemets/virgules/échappement) + validation (nom manquant/court, doublons) → `POST .../import/teams/preview` (aperçu valides+erreurs, sans persister) puis `.../import/teams/confirm` (création).
+- **Export CSV** : `GET /tournaments/:id/export/teams.csv`, `GET /competitions/:id/export/standings.csv` (RBAC `export.run`, `Content-Disposition: attachment`).
+- **Statistiques** : meilleurs **buteurs** (agrégation des événements GOAL) + synthèse (équipes/matchs joués/buts) — dashboard (`standing.view`) et **public** (`/public/tournaments/:slug/scorers`).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **83 tests** dont **29 d'intégration sur Supabase** (sponsors, import/export).
+
+## [Phase 12] — Paiements
 
 ### Ajouté (D5/D7 : paiement manuel au MVP, providers en ligne derrière abstraction)
 - **Calcul de commission pur** (`fees.ts`, testé) : `computeFees(gross, {platformFeeBps, processingFeeFlat})` → grossAmount/platformFee/paymentProcessingFee/organizerAmount/platformAmount (exemple cahier §57 : 50 000 → 2 500 + 1 000 + 46 500) ; `rollUpPaymentStatus` (UNPAID/PARTIAL/PAID). MVP : 0 % (gratuit organisateur).

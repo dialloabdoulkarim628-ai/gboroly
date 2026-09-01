@@ -14,6 +14,9 @@ import { PublicModule } from './public/public.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SponsorsModule } from './sponsors/sponsors.module';
+import { DataModule } from './data/data.module';
+import { StatsModule } from './stats/stats.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -33,6 +36,9 @@ import { HealthController } from './health/health.controller';
     RealtimeModule,
     NotificationsModule,
     PaymentsModule,
+    SponsorsModule,
+    DataModule,
+    StatsModule,
   ],
   controllers: [HealthController],
 })

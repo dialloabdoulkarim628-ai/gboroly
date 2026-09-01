@@ -41,4 +41,14 @@ export class PublicController {
   announcements(@Param('slug') slug: string) {
     return this.publicService.getAnnouncements(slug);
   }
+
+  @Get(':slug/sponsors')
+  sponsors(@Param('slug') slug: string) {
+    return this.publicService.getSponsors(slug);
+  }
+
+  @Get(':slug/scorers')
+  scorers(@Param('slug') slug: string) {
+    return this.publicService.getScorers(slug);
+  }
 }
