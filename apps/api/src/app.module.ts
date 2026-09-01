@@ -12,6 +12,7 @@ import { MatchesModule } from './matches/matches.module';
 import { SchedulingModule } from './scheduling/scheduling.module';
 import { PublicModule } from './public/public.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -29,6 +30,7 @@ import { HealthController } from './health/health.controller';
     SchedulingModule,
     PublicModule,
     RealtimeModule,
+    NotificationsModule,
   ],
   controllers: [HealthController],
 })

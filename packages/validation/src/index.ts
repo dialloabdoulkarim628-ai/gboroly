@@ -6,3 +6,4 @@ export * from './player.js';
 export * from './registration.js';
 export * from './match.js';
 export * from './venue.js';
+export * from './communication.js';

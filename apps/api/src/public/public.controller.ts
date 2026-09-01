@@ -36,4 +36,9 @@ export class PublicController {
   bracket(@Param('slug') slug: string) {
     return this.publicService.getBracket(slug);
   }
+
+  @Get(':slug/announcements')
+  announcements(@Param('slug') slug: string) {
+    return this.publicService.getAnnouncements(slug);
+  }
 }

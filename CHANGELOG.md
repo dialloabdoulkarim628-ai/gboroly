@@ -1,6 +1,18 @@
 # Changelog — Gboroly
 
-## [Phase 10] — Temps réel — en cours
+## [Phase 11] — Notifications & Communications — en cours
+
+### Ajouté (décision D5 : in-app + email + liens wa.me, sans API payante)
+- **Templates purs** (`templates.ts`, testés) : rendu par type de notification + `matchReminderText` + **`buildWhatsAppLink`** (normalise le numéro, encode le texte).
+- **Abstraction `NotificationProvider`** + `ConsoleEmailProvider` (dev) — le domaine ne dépend d'aucun fournisseur.
+- **`NotificationsService`** : notif in-app (persistées) + email (provider), `notifyOrgMembers`, liste/`unread-count`/`markRead`/`markAllRead`.
+- **`CommunicationsService`** : annonces (persist + **outbox `AnnouncementCreated`** → temps réel + notif membres) ; **lien WhatsApp de rappel de match** (`wa.me`, cahier §23).
+- **Endpoints** : `/notifications` (cloche, portée utilisateur) ; `POST/GET /tournaments/:id/announcements` (`announcement.publish`) ; `GET /matches/:id/whatsapp-reminder` (`notification.send`) ; **`GET /public/tournaments/:slug/announcements`**.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **65 tests** dont **22 d'intégration exécutés en vrai sur Supabase** (annonce → outbox + notification).
+
+## [Phase 10] — Temps réel
 
 ### Ajouté (SSE — cahier §49, zéro dépendance)
 - **`RealtimeService`** : bus en mémoire (RxJS Subject), `streamFor(tournamentId)` filtré + heartbeat 25 s. 2 tests unitaires.

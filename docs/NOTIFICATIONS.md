@@ -60,3 +60,16 @@ Chaque envoi : job **idempotent, retryable, observable**. Échecs journalisés (
 ## 7. Rappels automatiques
 
 Jobs planifiés (BullMQ repeatable) : rappel « prochain match » J‑1 / H‑1 aux équipes concernées, via canaux préférés. Générés à partir du calendrier.
+
+## Implémentation (Phase 11)
+
+Décision D5 : **in-app + email + liens `wa.me`**, aucune API WhatsApp payante au MVP.
+
+- **`templates.ts`** (pur, testé) : `renderNotification(type,data)`, `matchReminderText`, `buildWhatsAppLink(phone,text)`.
+- **`NotificationProvider`** (abstraction) + `ConsoleEmailProvider` (dev log). Providers futurs : SMTP/Resend, Twilio, WhatsApp Cloud API, Web Push — branchés sans toucher au domaine.
+- **`NotificationsService`** : persistance in-app (table `Notification`), envoi email via provider, `notifyOrgMembers`, `list`/`unreadCount`/`markRead`/`markAllRead`.
+- **`CommunicationsService`** : `createAnnouncement` (persist + `OutboxEvent(AnnouncementCreated)` relayé en temps réel → `announcement.created` + notif membres) ; `matchReminderLink` (texte « prochain match » + `wa.me`).
+- **Endpoints** : `/notifications` (portée utilisateur, cloche) ; `/tournaments/:id/announcements` (dashboard) ; `/matches/:id/whatsapp-reminder` ; `/public/tournaments/:slug/announcements`.
+- **Temps réel** : le relais outbox (Phase 10) diffuse déjà `AnnouncementCreated` → les pages publiques se rafraîchissent.
+
+**Suite** : brancher progressivement les événements métier (RegistrationApproved, PaymentConfirmed, MatchScheduled…) sur `NotificationsService` ; ajouter un vrai provider email/WhatsApp Cloud API selon budget.

@@ -113,6 +113,16 @@ export class PublicService {
     }));
   }
 
+  async getAnnouncements(slug: string) {
+    const t = await this.resolve(slug);
+    const items = await this.prisma.announcement.findMany({
+      where: { tournamentId: t.id, publishedAt: { not: null } },
+      orderBy: { publishedAt: 'desc' },
+      select: { id: true, title: true, body: true, publishedAt: true },
+    });
+    return items;
+  }
+
   async getBracket(slug: string) {
     const t = await this.resolve(slug);
     const rounds = await this.prisma.round.findMany({
