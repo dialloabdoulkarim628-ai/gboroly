@@ -1,6 +1,18 @@
 # Changelog — Gboroly
 
-## [Phase 13] — Fonctionnalités avancées — en cours
+## [Phase 14] — Marketplace — en cours
+
+### Ajouté (dernière phase — vision)
+- **Découverte de tournois** : `GET /public/discover` (public) — filtres pays/ville/sport/recherche/`openOnly` + pagination ; renvoie fenêtre d'inscription + effectif (approuvés/max) + frais.
+- **Inscription publique d'équipes externes** : `POST /public/tournaments/:slug/register` (public, sans compte) → crée Team + **Registration PENDING** (validée ensuite par l'organisateur, réutilise le flux Phase 5). Anti-doublon + garde `isRegistrationOpen`.
+- **Règles pures** (`marketplace-rules.ts`, testées) : `isRegistrationOpen` (public/publié/fenêtre/complet → OPEN|NOT_PUBLIC|NOT_PUBLISHED|NOT_STARTED|CLOSED|FULL).
+- **Commission** : le moteur de frais (Phase 12) s'applique aux inscriptions marketplace ; paiement en ligne derrière l'abstraction `PaymentProvider` (activable ultérieurement).
+- **Frontend** : page **`/discover`** (cartes de tournois, badge « Inscriptions ouvertes », recherche) + **formulaire d'inscription public** `/t/[slug]/register` (client) + CTA sur la page du tournoi.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8 (routes `/discover`, `/t/[slug]/register`), **92 tests** dont **33 d'intégration sur Supabase** (découverte, inscription, doublon, fenêtre fermée).
+
+## [Phase 13] — Fonctionnalités avancées
 
 ### Ajouté
 - **Sponsors** : CRUD (`POST/GET /tournaments/:id/sponsors`, `PATCH/DELETE /sponsors/:id`, RBAC `sponsor.manage`) + niveaux MAIN/GOLD/SILVER/PARTNER ; exposition **publique** `GET /public/tournaments/:slug/sponsors`.

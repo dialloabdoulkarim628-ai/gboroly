@@ -96,3 +96,32 @@ export const getTeams = (slug: string) =>
   get<PublicTeam[]>(`/public/tournaments/${slug}/teams`);
 export const getBracket = (slug: string) =>
   get<BracketNode[]>(`/public/tournaments/${slug}/bracket`);
+
+export interface DiscoverItem {
+  id: string;
+  name: string;
+  slug: string;
+  sport: { key: string; name: string };
+  country: string;
+  city?: string | null;
+  startDate?: string | null;
+  registrationEnd?: string | null;
+  registrationFee: number | null;
+  currency: string;
+  status: string;
+  teams: { approved: number; max: number | null };
+  registrationOpen: boolean;
+}
+export interface DiscoverResponse {
+  total: number;
+  page: number;
+  pageSize: number;
+  items: DiscoverItem[];
+}
+
+export const getDiscover = (qs = '') =>
+  get<DiscoverResponse>(`/public/discover${qs}`);
+
+/** Base API exposée au client (formulaire d'inscription public). */
+export const CLIENT_API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';

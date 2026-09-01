@@ -17,6 +17,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { SponsorsModule } from './sponsors/sponsors.module';
 import { DataModule } from './data/data.module';
 import { StatsModule } from './stats/stats.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -39,6 +40,7 @@ import { HealthController } from './health/health.controller';
     SponsorsModule,
     DataModule,
     StatsModule,
+    MarketplaceModule,
   ],
   controllers: [HealthController],
 })

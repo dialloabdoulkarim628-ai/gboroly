@@ -22,6 +22,14 @@ export default async function OverviewPage({ params }: Params) {
 
   return (
     <div className="space-y-6">
+      <Link
+        href={`/t/${slug}/register`}
+        className="flex items-center justify-between rounded-card bg-brand px-5 py-4 text-white shadow-card transition-colors hover:bg-brand-dark"
+      >
+        <span className="font-semibold">Inscrivez votre équipe à ce tournoi</span>
+        <span className="rounded-full bg-white/20 px-3 py-1 text-sm font-semibold">S’inscrire →</span>
+      </Link>
+
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Équipes" value={t?.stats.teams ?? 0} />
         <Stat label="Matchs joués" value={t?.stats.matchesPlayed ?? 0} />
