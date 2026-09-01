@@ -61,7 +61,7 @@ describe.skipIf(!runDb)('TournamentsService (intégration DB)', () => {
     await expect(service.publish(orgId, tournamentId)).rejects.toThrow();
   });
 
-  it('publie après catégorie + 2 équipes validées', async () => {
+  it('reste bloqué en publication tant que format/terrains/calendrier manquent', async () => {
     const cat = await service.createCategory(orgId, tournamentId, { name: 'Senior' } as never);
     // 2 équipes inscrites et validées (critère "teams" activé en Phase 5).
     for (let i = 0; i < 2; i++) {
@@ -80,8 +80,10 @@ describe.skipIf(!runDb)('TournamentsService (intégration DB)', () => {
     }
     const { items } = await service.getChecklist(orgId, tournamentId);
     expect(items.find((i) => i.key === 'teams')?.met).toBe(true);
-    const published = await service.publish(orgId, tournamentId);
-    expect(published.status).toBe(TournamentStatus.PUBLISHED);
+    // Phase 8 : publier exige aussi format + terrains + calendrier.
+    const missing = items.filter((i) => i.required && !i.met).map((i) => i.key);
+    expect(missing).toEqual(expect.arrayContaining(['format', 'fields', 'schedule']));
+    await expect(service.publish(orgId, tournamentId)).rejects.toThrow();
   });
 
   it('duplique en DRAFT avec les catégories (sans les résultats)', async () => {

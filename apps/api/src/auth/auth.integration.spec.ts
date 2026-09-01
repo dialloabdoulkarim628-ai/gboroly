@@ -35,7 +35,15 @@ describe.skipIf(!runDb)('AuthService (intégration DB)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email } });
+    // Supprimer les enfants avant les users (pas d'ON DELETE CASCADE — soft-delete en prod).
+    const users = await prisma.user.findMany({
+      where: { email: { startsWith: 'itest' } },
+      select: { id: true },
+    });
+    const ids = users.map((u) => u.id);
+    await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+    await prisma.authToken.deleteMany({ where: { userId: { in: ids } } });
+    await prisma.user.deleteMany({ where: { id: { in: ids } } });
     await prisma.$disconnect();
   });
 
@@ -71,6 +79,6 @@ describe.skipIf(!runDb)('AuthService (intégration DB)', () => {
     const userId = (reg.verification as { devCode: string; userId: string }).userId;
     const res = await auth.verifyEmail({ userId, code });
     expect(res.success).toBe(true);
-    await prisma.user.deleteMany({ where: { email: email2 } });
+    // Nettoyage centralisé dans afterAll (supprime les enfants avant les users).
   });
 });
