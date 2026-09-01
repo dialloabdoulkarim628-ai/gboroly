@@ -1,6 +1,21 @@
 # Changelog — Gboroly
 
-## [Phase 8] — Calendrier — en cours
+## [Phase 9] — Pages publiques — en cours
+
+### Ajouté — Backend (module `public`, lecture seule, non authentifié)
+- `GET /public/tournaments/:slug` (+ `/standings`, `/matches`, `/teams`, `/bracket`) — **filtrés `visibility=PUBLIC` et statut PUBLISHED/ONGOING/COMPLETED/ARCHIVED** ; DTOs sûrs (aucune donnée privée : paiements, notes). Bracket construit via `buildBracketView` du moteur.
+- Test d'intégration gated : vérifie qu'un tournoi DRAFT/PRIVATE est **masqué** (404).
+
+### Ajouté — Frontend (Next.js App Router, `/t/[slug]`)
+- Layout public : header (logo/nom/lieu/date/statut) + onglets (Accueil/Matchs/Classement/Équipes/Bracket), **SEO + Open Graph + Twitter card** via `generateMetadata`, `canonical`.
+- Pages : **Accueil** (stats + prochains matchs + derniers résultats), **Matchs** (groupés par jour), **Classement** (tables par groupe), **Équipes** (grille), **Bracket** (colonnes par tour), page **404** dédiée.
+- Mobile-first, design tokens de la charte (navy/brand/energy…), **ISR** (revalidate 60 s), rendu dynamique, bundles légers (~103–106 kB) pour réseaux faibles.
+- Client API public `apps/web/src/lib/api.ts` (fetch résilient : API indisponible → état vide / notFound).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8 (5 routes `/t/[slug]/*` compilées, dynamiques), **70 tests** + 20 d'intégration DB gated.
+
+## [Phase 8] — Calendrier
 
 ### Ajouté
 - **`ScheduleGenerator` (module pur, 6 tests)** : place les appariements sur des créneaux jour×terrain×heure, best-effort. Contraintes respectées : repos minimal par équipe, pas de match simultané pour une équipe, un match par créneau et par terrain. Renvoie les affectations + les matchs non planifiables (`NO_FIELD` / `NO_FEASIBLE_SLOT`).
