@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTournament } from '@/lib/api';
 import { StatusBadge } from './_components';
 import { NavTabs } from './_nav';
+import { LiveUpdater } from './_live';
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -41,6 +42,7 @@ export default async function TournamentLayout({
 
   return (
     <div className="min-h-screen bg-canvas">
+      <LiveUpdater slug={slug} />
       <header className="bg-navy text-white">
         <div className="mx-auto max-w-4xl px-4 pt-6">
           <div className="flex items-start gap-4">

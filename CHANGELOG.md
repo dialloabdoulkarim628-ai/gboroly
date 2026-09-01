@@ -1,6 +1,19 @@
 # Changelog — Gboroly
 
-## [Phase 9] — Pages publiques — en cours
+## [Phase 10] — Temps réel — en cours
+
+### Ajouté (SSE — cahier §49, zéro dépendance)
+- **`RealtimeService`** : bus en mémoire (RxJS Subject), `streamFor(tournamentId)` filtré + heartbeat 25 s. 2 tests unitaires.
+- **`OutboxRelayService`** : draine `OutboxEvent` PENDING (poll 2 s) → publie en temps réel → marque DONE (retry/backoff, FAILED après 5). **Découplé de la transaction finish** (Outbox pattern). Désactivable via `OUTBOX_RELAY_DISABLED=1`.
+- **Endpoint public** `@Sse GET /public/tournaments/:slug/live` (filtré PUBLIC).
+- **Émissions outbox** ajoutées sur `start` (MatchStarted), `setScore`/but (MatchScoreUpdated) ; `finish` (MatchFinished → `match.finished` + `standings.updated`).
+- **Frontend** `LiveUpdater` (client) : `EventSource` → `router.refresh()` → pages publiques mises à jour **sans rechargement**.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **72 tests** (api 38) + 20 d'intégration DB gated.
+- Limite MVP : bus mono-instance (multi-instances → adaptateur Redis pub/sub).
+
+## [Phase 9] — Pages publiques
 
 ### Ajouté — Backend (module `public`, lecture seule, non authentifié)
 - `GET /public/tournaments/:slug` (+ `/standings`, `/matches`, `/teams`, `/bracket`) — **filtrés `visibility=PUBLIC` et statut PUBLISHED/ONGOING/COMPLETED/ARCHIVED** ; DTOs sûrs (aucune donnée privée : paiements, notes). Bracket construit via `buildBracketView` du moteur.

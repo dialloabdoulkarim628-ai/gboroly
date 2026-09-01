@@ -81,6 +81,7 @@ export class MatchesService {
         where: { id: match.tournamentId, status: TournamentStatus.PUBLISHED },
         data: { status: TournamentStatus.ONGOING },
       });
+      await this.emitOutbox(tx, match, 'MatchStarted', {});
       return tx.match.findUniqueOrThrow({ where: { id: matchId } });
     });
   }
@@ -114,6 +115,7 @@ export class MatchesService {
             ? { homeScore: { increment: 1 } }
             : { awayScore: { increment: 1 } },
         });
+        await this.emitOutbox(tx, match, 'MatchScoreUpdated', {});
       }
       return event;
     });
@@ -124,14 +126,21 @@ export class MatchesService {
     if (match.status === MatchStatus.FINISHED || match.status === MatchStatus.CANCELLED) {
       throw new ConflictException(errCode('MATCH_CLOSED', 'Match terminé/annulé'));
     }
-    return this.prisma.match.update({
-      where: { id: matchId },
-      data: {
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.match.update({
+        where: { id: matchId },
+        data: {
+          homeScore: input.homeScore,
+          awayScore: input.awayScore,
+          homePenalties: input.homePenalties,
+          awayPenalties: input.awayPenalties,
+        },
+      });
+      await this.emitOutbox(tx, match, 'MatchScoreUpdated', {
         homeScore: input.homeScore,
         awayScore: input.awayScore,
-        homePenalties: input.homePenalties,
-        awayPenalties: input.awayPenalties,
-      },
+      });
+      return updated;
     });
   }
 
@@ -342,6 +351,28 @@ export class MatchesService {
     if (res.count === 0) {
       throw new ConflictException(errCode('CONCURRENT_UPDATE', 'Match modifié par une autre opération'));
     }
+  }
+
+  /** Écrit un événement d'outbox (relayé en temps réel par OutboxRelayService). */
+  private emitOutbox(
+    tx: Prisma.TransactionClient,
+    match: { id: string; tournamentId: string; competitionId: string },
+    eventType: string,
+    extra: Record<string, unknown>,
+  ) {
+    return tx.outboxEvent.create({
+      data: {
+        aggregateType: 'Match',
+        aggregateId: match.id,
+        eventType,
+        payload: {
+          matchId: match.id,
+          tournamentId: match.tournamentId,
+          competitionId: match.competitionId,
+          ...extra,
+        } as Prisma.InputJsonValue,
+      },
+    });
   }
 
   private rules(_formatConfig: unknown): RankingRules {
