@@ -274,7 +274,9 @@ export class TournamentsService {
         }),
         this.prisma.competition.count({ where: { tournamentId: tournament.id } }),
         this.prisma.field.count({ where: { tournamentId: tournament.id } }),
-        this.prisma.match.count({ where: { tournamentId: tournament.id } }),
+        this.prisma.match.count({
+          where: { tournamentId: tournament.id, scheduledAt: { not: null } },
+        }),
       ]);
     return {
       hasName: Boolean(tournament.name),

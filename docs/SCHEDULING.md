@@ -77,3 +77,11 @@ L'organisateur peut : déplacer un match (date/heure/terrain), échanger deux ma
 - Repos minimal respecté.
 - Report d'un match → recalcul cohérent, pas de corruption des autres créneaux.
 - Tournoi sur-contraint → dégradation propre (rapport de conflits, pas de crash).
+
+## Implémentation (Phase 8)
+
+- **Module pur** `apps/api/src/scheduling/schedule-generator.ts` (`generateSchedule(matches, fieldIds, config)`), 6 tests unitaires — aucune dépendance DB. Greedy chronologique : génère les créneaux (jour×terrain×heure, pas = durée + pause), puis affecte chaque match (priorité = `round.order`×1000 + `match.order`) au premier créneau libre où **les deux équipes** respectent le repos minimal (`teamIsFree`). Best-effort : les matchs non plaçables sont renvoyés (`NO_FIELD` / `NO_FEASIBLE_SLOT`) plutôt que forcés.
+- Contraintes **dures** appliquées : 1 (simultané équipe), 2 (repos), 3 (1 match/créneau/terrain). Arbitres (4) et équilibrage (6) : non traités au MVP (édition manuelle possible).
+- **Service** `scheduling.service.ts` : lit les matchs planifiables (SCHEDULED, 2 équipes connues) + `Field` du tournoi, applique `scheduledAt`/`fieldId`/`venueId` en transaction (sauf `dryRun`).
+- **Édition manuelle** : `PATCH /matches/:id/schedule` (Phase 7) — « automatisation avec contrôle ».
+- Endpoint : `POST /competitions/:competitionId/schedule` (RBAC `schedule.generate`).

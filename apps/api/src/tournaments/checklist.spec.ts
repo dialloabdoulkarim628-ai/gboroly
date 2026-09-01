@@ -6,45 +6,35 @@ import {
   type ChecklistInput,
 } from './checklist';
 
-// Base "publiable" : infos complètes + 1 catégorie + 2 équipes validées.
+// Base "publiable" : tous les critères bloquants remplis (Phase 8).
 const base: ChecklistInput = {
   hasName: true,
   hasSport: true,
   hasCountry: true,
   categoriesCount: 1,
   approvedTeamsCount: 2,
-  competitionsConfigured: 0,
-  fieldsCount: 0,
-  scheduledMatchesCount: 0,
+  competitionsConfigured: 1,
+  fieldsCount: 1,
+  scheduledMatchesCount: 1,
 };
 
 describe('checklist de publication', () => {
-  it('publiable si infos + catégorie + 2 équipes validées', () => {
+  it('publiable quand tous les critères bloquants sont remplis', () => {
     const items = buildPublicationChecklist(base);
     expect(isPublishable(items)).toBe(true);
     expect(unmetRequired(items)).toHaveLength(0);
   });
 
-  it('non publiable sans catégorie', () => {
-    const items = buildPublicationChecklist({ ...base, categoriesCount: 0 });
+  it.each([
+    ['categories', { categoriesCount: 0 }],
+    ['info', { hasCountry: false }],
+    ['teams', { approvedTeamsCount: 1 }],
+    ['format', { competitionsConfigured: 0 }],
+    ['fields', { fieldsCount: 0 }],
+    ['schedule', { scheduledMatchesCount: 0 }],
+  ] as const)('non publiable si %s manquant', (key, patch) => {
+    const items = buildPublicationChecklist({ ...base, ...patch });
     expect(isPublishable(items)).toBe(false);
-    expect(unmetRequired(items).map((i) => i.key)).toContain('categories');
-  });
-
-  it('non publiable si infos incomplètes', () => {
-    const items = buildPublicationChecklist({ ...base, hasCountry: false });
-    expect(isPublishable(items)).toBe(false);
-    expect(unmetRequired(items).map((i) => i.key)).toContain('info');
-  });
-
-  it('non publiable avec moins de 2 équipes validées (activé Phase 5)', () => {
-    const items = buildPublicationChecklist({ ...base, approvedTeamsCount: 1 });
-    expect(isPublishable(items)).toBe(false);
-    expect(unmetRequired(items).map((i) => i.key)).toContain('teams');
-  });
-
-  it('format/terrains/calendrier ne bloquent pas encore', () => {
-    // competitions/fields/schedule à 0 mais non bloquants en Phase 5
-    expect(isPublishable(buildPublicationChecklist(base))).toBe(true);
+    expect(unmetRequired(items).map((i) => i.key)).toContain(key);
   });
 });

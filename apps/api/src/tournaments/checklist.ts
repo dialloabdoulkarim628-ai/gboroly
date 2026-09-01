@@ -47,19 +47,19 @@ export function buildPublicationChecklist(input: ChecklistInput): ChecklistItem[
       key: 'format',
       label: 'Format de compétition configuré',
       met: input.competitionsConfigured >= 1,
-      required: false, // Phase 6
+      required: true, // activé en Phase 7
     },
     {
       key: 'fields',
       label: 'Terrains configurés',
       met: input.fieldsCount >= 1,
-      required: false, // Phase 8
+      required: true, // activé en Phase 8
     },
     {
       key: 'schedule',
       label: 'Calendrier généré',
       met: input.scheduledMatchesCount >= 1,
-      required: false, // Phase 8
+      required: true, // activé en Phase 8
     },
   ];
 }

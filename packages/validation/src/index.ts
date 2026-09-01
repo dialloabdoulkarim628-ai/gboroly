@@ -5,3 +5,4 @@ export * from './team.js';
 export * from './player.js';
 export * from './registration.js';
 export * from './match.js';
+export * from './venue.js';

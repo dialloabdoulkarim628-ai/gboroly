@@ -1,6 +1,17 @@
 # Changelog — Gboroly
 
-## [Phase 7] — Matchs & Match Day — en cours
+## [Phase 8] — Calendrier — en cours
+
+### Ajouté
+- **`ScheduleGenerator` (module pur, 6 tests)** : place les appariements sur des créneaux jour×terrain×heure, best-effort. Contraintes respectées : repos minimal par équipe, pas de match simultané pour une équipe, un match par créneau et par terrain. Renvoie les affectations + les matchs non planifiables (`NO_FIELD` / `NO_FEASIBLE_SLOT`).
+- **Venues / Fields** : CRUD (`POST /tournaments/:id/venues`, `POST /venues/:id/fields`, `GET …/venues|fields`, `PATCH/DELETE /fields/:id`) — RBAC `venue.manage`. Suppression bloquée si le terrain est utilisé.
+- **Génération de calendrier** : `POST /competitions/:id/schedule` (RBAC `schedule.generate`) — lit les matchs planifiables (SCHEDULED, deux équipes connues) + terrains, applique le plan (scheduledAt/fieldId/venueId) sauf `dryRun`. Édition manuelle déjà couverte par `PATCH /matches/:id/schedule`.
+- **Checklist de publication** : critères `format`, `terrains`, `calendrier` désormais **bloquants** ; le critère « calendrier » compte les matchs avec `scheduledAt`.
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **70 tests** (dont 6 scheduler) + 18 d'intégration DB gated.
+
+## [Phase 7] — Matchs & Match Day
 
 ### Ajouté (branchement moteur ↔ DB)
 - **Module `competitions`** : `POST /categories/:id/competition` génère la structure (ROUND_ROBIN / GROUP_STAGE / SINGLE_ELIMINATION / DOUBLE_ELIMINATION / GROUP_TO_PLAYOFFS) depuis les inscriptions validées → persiste rounds/groups/groupTeams/matches (chaînage `feedsInto`/`loserFeedsInto` remappé en ids DB). Régénération sûre tant qu'aucun match n'a démarré. `POST /competitions/:id/playoffs` (phases finales des qualifiés). `GET …/standings`, `GET …/matches`.
