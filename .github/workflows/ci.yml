@@ -2,53 +2,53 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
 
+    # PostgreSQL éphémère pour les tests d'intégration (RUN_DB_TESTS=1).
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16
         env:
           POSTGRES_USER: gboroly
           POSTGRES_PASSWORD: gboroly
-          POSTGRES_DB: gboroly_test
+          POSTGRES_DB: gboroly
         ports:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U gboroly"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
+          --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://gboroly:gboroly@localhost:5432/gboroly_test?schema=public
-      REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci-secret
-      JWT_REFRESH_SECRET: ci-refresh-secret
+      DATABASE_URL: postgresql://gboroly:gboroly@localhost:5432/gboroly?schema=public
+      DIRECT_URL: postgresql://gboroly:gboroly@localhost:5432/gboroly?schema=public
+      # Secrets factices : suffisent aux tests (l'auth d'intégration n'utilise pas de vraies clés).
+      JWT_SECRET: ci-test-secret
+      JWT_ACCESS_TTL: '900'
+      JWT_REFRESH_TTL: '2592000'
+      NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
@@ -57,7 +57,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm db:generate
+        run: pnpm --filter @gboroly/database exec prisma generate
 
       - name: Lint
         run: pnpm lint
@@ -65,7 +65,12 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit & integration tests
+      - name: Apply schema to test database
+        run: pnpm --filter @gboroly/database exec prisma db push --skip-generate
+
+      - name: Test (unit + integration)
+        env:
+          RUN_DB_TESTS: '1'
         run: pnpm test
 
       - name: Build

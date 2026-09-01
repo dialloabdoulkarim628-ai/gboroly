@@ -1,5 +1,7 @@
 # Gboroly — The African Sports Tournament OS
 
+[![CI](https://github.com/dialloabdoulkarim628-ai/gboroly/actions/workflows/ci.yml/badge.svg)](https://github.com/dialloabdoulkarim628-ai/gboroly/actions/workflows/ci.yml)
+
 Plateforme SaaS de digitalisation et d'automatisation des tournois sportifs.
 Sport initial : **Maracana** · Marché : **Côte d'Ivoire** · Vision : plateforme africaine multisports.
 
