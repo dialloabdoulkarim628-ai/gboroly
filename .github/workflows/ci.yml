@@ -50,7 +50,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # pnpm 11.24 requiert Node >= 22.13 (utilise node:sqlite).
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies

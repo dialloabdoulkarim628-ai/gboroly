@@ -1,6 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
+  "globalPassThroughEnv": [
+    "RUN_DB_TESTS",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "JWT_SECRET",
+    "JWT_ACCESS_TTL",
+    "JWT_REFRESH_TTL",
+    "NODE_ENV",
+    "OUTBOX_RELAY_DISABLED",
+    "PLATFORM_FEE_BPS"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
