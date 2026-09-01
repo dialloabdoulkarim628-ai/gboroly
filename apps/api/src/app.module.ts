@@ -8,6 +8,7 @@ import { TournamentsModule } from './tournaments/tournaments.module';
 import { TeamsModule } from './teams/teams.module';
 import { PlayersModule } from './players/players.module';
 import { RegistrationsModule } from './registrations/registrations.module';
+import { MatchesModule } from './matches/matches.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -21,6 +22,7 @@ import { HealthController } from './health/health.controller';
     TeamsModule,
     PlayersModule,
     RegistrationsModule,
+    MatchesModule,
   ],
   controllers: [HealthController],
 })

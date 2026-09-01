@@ -737,6 +737,9 @@ model Match {
   resultType      ResultType?
   feedsIntoMatchId String?
   feedsIntoSlot   String?
+  loserFeedsIntoMatchId String?
+  loserFeedsIntoSlot    String?
+  order           Int         @default(0)
   notes           String?
   startedAt       DateTime?
   finishedAt      DateTime?

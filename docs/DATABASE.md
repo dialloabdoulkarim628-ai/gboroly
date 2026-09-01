@@ -179,7 +179,9 @@
 | winnerRegistrationId? | FK | |
 | forfeitTeamId? | FK | équipe forfait |
 | resultType? | ResultType | NORMAL/FORFEIT/WALKOVER |
-| feedsIntoMatchId? · feedsIntoSlot? | FK/enum | chaînage bracket |
+| feedsIntoMatchId? · feedsIntoSlot? | FK/str | chaînage bracket (vainqueur) |
+| loserFeedsIntoMatchId? · loserFeedsIntoSlot? | FK/str | chaînage double élimination (perdant) |
+| order | Int | ordre intra-round (bracket/affichage) |
 | notes? | String | |
 | startedAt? · finishedAt? · postponedFrom? | DateTime | |
 | createdAt/updatedAt/deletedAt? | | |

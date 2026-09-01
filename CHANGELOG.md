@@ -1,6 +1,19 @@
 # Changelog — Gboroly
 
-## [Phase 6] — ⭐ Competition Engine — en cours
+## [Phase 7] — Matchs & Match Day — en cours
+
+### Ajouté (branchement moteur ↔ DB)
+- **Module `competitions`** : `POST /categories/:id/competition` génère la structure (ROUND_ROBIN / GROUP_STAGE / SINGLE_ELIMINATION / DOUBLE_ELIMINATION / GROUP_TO_PLAYOFFS) depuis les inscriptions validées → persiste rounds/groups/groupTeams/matches (chaînage `feedsInto`/`loserFeedsInto` remappé en ids DB). Régénération sûre tant qu'aucun match n'a démarré. `POST /competitions/:id/playoffs` (phases finales des qualifiés). `GET …/standings`, `GET …/matches`.
+- **Module `matches`** : cycle de vie complet — `schedule`, `start` (→ tournoi ONGOING), `events` (but ⇒ score), `score`, **`finish`**, `forfeit`, `postpone`, `cancel`.
+- **⭐ Chaîne transactionnelle `finish`** : match FINISHED → recompute classement (delete+createMany idempotent) → `advanceKnockout`/`advanceDoubleElimination` (résout les slots aval) → `OutboxEvent(MatchFinished)`, le tout dans une transaction PostgreSQL. **Verrou optimiste** (`version`) contre la concurrence.
+- Mapper pur DB↔moteur (`toEngineMatch`, `winnerFromScore`) unit-testé (5 tests).
+- Schéma `Match` : ajout `loserFeedsIntoMatchId/Slot` + `order`.
+- RBAC réutilisé (`competition.configure`, `match.operate`, `match.reschedule`, `match.cancel`, `standing.view`).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **62 tests** (dont 5 unitaires mapper) + **18 d'intégration DB gated** (nouveau : Golden Path génération→matchs→classement→phases finales→champion).
+
+## [Phase 6] — ⭐ Competition Engine
 
 ### Ajouté (package pur `competition-engine`, 26 tests)
 - **Groupes** : distribution "serpent", fixtures de poules, classement par groupe.
