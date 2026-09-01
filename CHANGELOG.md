@@ -1,6 +1,17 @@
 # Changelog — Gboroly
 
-## [Phase 11] — Notifications & Communications — en cours
+## [Phase 12] — Paiements — en cours
+
+### Ajouté (D5/D7 : paiement manuel au MVP, providers en ligne derrière abstraction)
+- **Calcul de commission pur** (`fees.ts`, testé) : `computeFees(gross, {platformFeeBps, processingFeeFlat})` → grossAmount/platformFee/paymentProcessingFee/organizerAmount/platformAmount (exemple cahier §57 : 50 000 → 2 500 + 1 000 + 46 500) ; `rollUpPaymentStatus` (UNPAID/PARTIAL/PAID). MVP : 0 % (gratuit organisateur).
+- **Abstraction `PaymentProvider`** (createPayment/verify/refund/getStatus) + **`ManualPaymentProvider`** (cash/reçu, seul actif) ; Wave/OM/MTN/Moov/carte = futurs derrière l'interface.
+- **`PaymentsService`** : `recordPayment` (fees + **idempotence** via `idempotencyKey` unique, gère la course P2002 + persiste Payment/PaymentTransaction + **roll-up `registration.paymentStatus`**), `refund`, `listByTournament/Registration`, `summary` (revenus/commission).
+- **Endpoints** : `POST /registrations/:id/payments` (payment.manage), `GET .../payments`, `GET /tournaments/:id/payments[/summary]`, `POST /payments/:id/refund` (payment.refund).
+
+### Vérifié
+- typecheck 14/14, lint OK, build 8/8, **75 tests** dont **26 d'intégration sur Supabase** (paiement complet/partiel, idempotence, remboursement).
+
+## [Phase 11] — Notifications & Communications
 
 ### Ajouté (décision D5 : in-app + email + liens wa.me, sans API payante)
 - **Templates purs** (`templates.ts`, testés) : rendu par type de notification + `matchReminderText` + **`buildWhatsAppLink`** (normalise le numéro, encode le texte).

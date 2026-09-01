@@ -74,3 +74,15 @@ Modèle prévu pour la marketplace (Phase 14) : l'équipe paie via la plateforme
 - Gboroly **n'entre jamais** de credentials bancaires/Mobile Money à la place de l'utilisateur : redirection vers le provider.
 - Clés provider via variables d'environnement (jamais en base ni en Git).
 - Montants et statuts **jamais** décidés par le frontend : vérifiés côté backend contre le provider.
+
+## Implémentation (Phase 12)
+
+MVP : **paiement manuel (cash/reçu)** uniquement (D5/D7) ; online derrière l'abstraction, non activé.
+
+- **`fees.ts`** (pur, testé) : `computeFees(gross, {platformFeeBps, processingFeeFlat})` → `{grossAmount, platformFee, paymentProcessingFee, organizerAmount, platformAmount}` ; `rollUpPaymentStatus(totalPaid, amountDue)`. MVP `platformFeeBps=0` (gratuit organisateur) ; configurable via `PLATFORM_FEE_BPS`.
+- **`PaymentProvider`** (abstraction : createPayment/verifyPayment/refundPayment/getPaymentStatus) + **`ManualPaymentProvider`** (confirme immédiatement). Providers Wave/Orange Money/MTN/Moov/carte = futurs, sans toucher au domaine.
+- **`PaymentsService`** : `recordPayment` (fees → Payment + PaymentTransaction, **idempotence** `idempotencyKey` unique + gestion course P2002, **roll-up** `registration.paymentStatus` UNPAID/PARTIAL/PAID), `refund` (→ REFUNDED + recalcul), `listByTournament/Registration`, `summary` (gross/organizerRevenue/platformCommission).
+- **Montants** : `BigInt` en base (plus petite unité, FCFA entier), jamais de flottant. `@@unique([provider, providerTxnRef])` + `idempotencyKey @unique`.
+- **Endpoints** : `POST /registrations/:id/payments` (payment.manage), `GET .../payments`, `GET /tournaments/:id/payments[/summary]`, `POST /payments/:id/refund` (payment.refund).
+
+**Suite** : brancher un provider Mobile Money (createPayment → redirectUrl ; webhook → PaymentTransaction + verifyPayment) ; relier `PaymentConfirmed` aux notifications (Phase 11).
