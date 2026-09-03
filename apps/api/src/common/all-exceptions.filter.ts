@@ -37,14 +37,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       err?.stack,
     );
 
-    const expose = req.headers['x-debug-key'] === 'gboroly-diag';
+    // Aucun détail interne n'est exposé au client : la stack est journalisée côté serveur.
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: 500,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Internal server error',
-        ...(expose ? { name: err?.name, detail: err?.message } : {}),
-      },
+      error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },
     });
   }
 }
