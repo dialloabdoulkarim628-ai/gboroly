@@ -5,7 +5,24 @@ export default function HomePage() {
     <main className="min-h-screen">
       {/* Hero */}
       <section className="bg-navy text-white">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+        {/* Barre de navigation */}
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+          <img
+            src="/logo-gboroly-blanc.png"
+            alt="Gboroly"
+            className="h-10 w-auto md:h-12"
+          />
+          <div className="flex items-center gap-3">
+            <a href="/discover" className="text-sm font-medium text-slate-200 hover:text-white">
+              Découvrir les tournois
+            </a>
+            <Button variant="ghost" className="border-white/20 text-white hover:bg-white/10">
+              Se connecter
+            </Button>
+          </div>
+        </nav>
+
+        <div className="mx-auto max-w-6xl px-6 pb-20 pt-10">
           <Badge tone="energy" className="mb-6">
             The African Sports Tournament OS
           </Badge>
@@ -56,8 +73,9 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-8 text-sm text-muted">
-          Gboroly — Vos tournois, simplement. · Côte d’Ivoire · Maracana
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+          <img src="/logo-gboroly.png" alt="Gboroly" className="h-10 w-auto" />
+          <span>Vos tournois, simplement. · Côte d’Ivoire · Maracana</span>
         </div>
       </footer>
     </main>
