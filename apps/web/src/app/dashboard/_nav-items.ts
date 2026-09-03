@@ -11,8 +11,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Tableau de bord', href: '/dashboard', icon: 'dashboard' },
   { label: 'Mes tournois', href: '/dashboard/tournois', icon: 'trophy' },
-  { label: 'Équipes', href: '/dashboard/equipes', icon: 'teams', soon: true },
-  { label: 'Joueurs', href: '/dashboard/joueurs', icon: 'players', soon: true },
+  { label: 'Équipes', href: '/dashboard/equipes', icon: 'teams' },
+  { label: 'Joueurs', href: '/dashboard/joueurs', icon: 'players' },
   { label: 'Matchs', href: '/dashboard/matchs', icon: 'matches', soon: true },
   { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar', soon: true },
   { label: 'Classements', href: '/dashboard/classements', icon: 'standings', soon: true },

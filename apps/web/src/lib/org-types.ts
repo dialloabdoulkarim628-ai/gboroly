@@ -26,6 +26,43 @@ export interface Tournament {
   createdAt: string;
 }
 
+export type TeamStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+export interface Team {
+  id: string;
+  name: string;
+  shortName?: string | null;
+  logoUrl?: string | null;
+  phone?: string | null;
+  status: TeamStatus;
+  createdAt: string;
+}
+
+export interface Player {
+  id: string;
+  firstName: string;
+  lastName: string;
+  position?: string | null;
+  nationality?: string | null;
+  phone?: string | null;
+  photoUrl?: string | null;
+  dateOfBirth?: string | null;
+  createdAt: string;
+}
+
+export interface RosterEntry {
+  id: string; // teamPlayer id
+  jerseyNumber?: number | null;
+  position?: string | null;
+  status: string;
+  player: { id: string; firstName: string; lastName: string; position?: string | null; photoUrl?: string | null };
+}
+
+export const TEAM_STATUS_META: Record<TeamStatus, { label: string; className: string }> = {
+  ACTIVE: { label: 'Active', className: 'bg-field/15 text-field' },
+  SUSPENDED: { label: 'Suspendue', className: 'bg-danger/10 text-danger' },
+  ARCHIVED: { label: 'Archivée', className: 'bg-slate-100 text-slate-500' },
+};
+
 export interface ChecklistItem {
   key: string;
   label: string;
