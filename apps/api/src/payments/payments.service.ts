@@ -125,11 +125,24 @@ export class PaymentsService {
     });
   }
 
-  listByTournament(orgId: string, tournamentId: string) {
-    return this.prisma.payment.findMany({
+  async listByTournament(orgId: string, tournamentId: string) {
+    const payments = await this.prisma.payment.findMany({
       where: { organizationId: orgId, tournamentId },
       orderBy: { createdAt: 'desc' },
+      include: { registration: { include: { team: { select: { name: true } } } } },
     });
+    return payments.map((p) => ({
+      id: p.id,
+      team: p.registration?.team?.name ?? null,
+      registrationId: p.registrationId,
+      amount: Number(p.grossAmount),
+      currency: p.currency,
+      method: p.method,
+      status: p.status,
+      receiptRef: p.receiptRef,
+      paidAt: p.paidAt,
+      createdAt: p.createdAt,
+    }));
   }
 
   listByRegistration(orgId: string, registrationId: string) {

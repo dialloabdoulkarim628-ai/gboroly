@@ -131,6 +131,45 @@ export interface Scorer {
   goals: number;
 }
 
+export interface Payment {
+  id: string;
+  team: string | null;
+  registrationId: string | null;
+  amount: number;
+  currency: string;
+  method: string;
+  status: string;
+  receiptRef?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+}
+export interface PaymentSummary {
+  count: number;
+  gross: number;
+  organizerRevenue: number;
+  platformCommission: number;
+}
+export interface Registration {
+  id: string;
+  status: string;
+  paymentStatus?: string | null;
+  team: { id: string; name: string; logoUrl?: string | null };
+}
+
+export const PAYMENT_METHODS: { value: string; label: string }[] = [
+  { value: 'CASH', label: 'Espèces' },
+  { value: 'WAVE', label: 'Wave' },
+  { value: 'ORANGE_MONEY', label: 'Orange Money' },
+  { value: 'MTN_MONEY', label: 'MTN Money' },
+  { value: 'MOOV_MONEY', label: 'Moov Money' },
+  { value: 'CARD', label: 'Carte' },
+  { value: 'MANUAL', label: 'Manuel' },
+  { value: 'OTHER', label: 'Autre' },
+];
+export const PAYMENT_METHOD_LABEL: Record<string, string> = Object.fromEntries(
+  PAYMENT_METHODS.map((m) => [m.value, m.label]),
+);
+
 export interface ChecklistItem {
   key: string;
   label: string;

@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Terrains', href: '/dashboard/terrains', icon: 'fields', soon: true },
   { label: 'Arbitres', href: '/dashboard/arbitres', icon: 'referees', soon: true },
   { label: 'Sponsors', href: '/dashboard/sponsors', icon: 'sponsors', soon: true },
-  { label: 'Paiements', href: '/dashboard/paiements', icon: 'payments', soon: true },
+  { label: 'Paiements', href: '/dashboard/paiements', icon: 'payments' },
   { label: 'Communications', href: '/dashboard/communications', icon: 'comms', soon: true },
   { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'stats', soon: true },
   { label: 'Paramètres', href: '/dashboard/parametres', icon: 'settings', soon: true },
