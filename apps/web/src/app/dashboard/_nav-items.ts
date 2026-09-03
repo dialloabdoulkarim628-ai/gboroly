@@ -14,9 +14,9 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Équipes', href: '/dashboard/equipes', icon: 'teams' },
   { label: 'Joueurs', href: '/dashboard/joueurs', icon: 'players' },
   { label: 'Matchs', href: '/dashboard/matchs', icon: 'matches' },
-  { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar', soon: true },
+  { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar' },
   { label: 'Classements', href: '/dashboard/classements', icon: 'standings' },
-  { label: 'Terrains', href: '/dashboard/terrains', icon: 'fields', soon: true },
+  { label: 'Terrains', href: '/dashboard/terrains', icon: 'fields' },
   { label: 'Arbitres', href: '/dashboard/arbitres', icon: 'referees', soon: true },
   { label: 'Sponsors', href: '/dashboard/sponsors', icon: 'sponsors', soon: true },
   { label: 'Paiements', href: '/dashboard/paiements', icon: 'payments' },
@@ -29,7 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
 export const MOBILE_NAV: NavItem[] = [
   { label: 'Accueil', href: '/dashboard', icon: 'dashboard' },
   { label: 'Tournois', href: '/dashboard/tournois', icon: 'trophy', soon: true },
-  { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar', soon: true },
+  { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar' },
   { label: 'Alertes', href: '/dashboard/communications', icon: 'bell', soon: true },
   { label: 'Menu', href: '#menu', icon: 'menu' },
 ];

@@ -170,6 +170,27 @@ export const PAYMENT_METHOD_LABEL: Record<string, string> = Object.fromEntries(
   PAYMENT_METHODS.map((m) => [m.value, m.label]),
 );
 
+export interface Field {
+  id: string;
+  name: string;
+  capacity?: number | null;
+  venueId?: string | null;
+}
+export interface Venue {
+  id: string;
+  name: string;
+  address?: string | null;
+  fields: Field[];
+}
+export interface CompetitionInfo {
+  id: string;
+  category: string;
+  formatType: string;
+  status: string;
+  matchesTotal: number;
+  matchesUnscheduled: number;
+}
+
 export interface ChecklistItem {
   key: string;
   label: string;

@@ -16,6 +16,12 @@ import { CompetitionsService } from './competitions.service';
 export class CompetitionsController {
   constructor(private readonly competitions: CompetitionsService) {}
 
+  @RequireMembership()
+  @Get('tournaments/:tournamentId/competitions')
+  listByTournament(@ActiveMembership() m: Membership, @Param('tournamentId') tournamentId: string) {
+    return this.competitions.listByTournament(m.organizationId, tournamentId);
+  }
+
   @RequirePermissions('competition.configure')
   @Post('categories/:categoryId/competition')
   generate(

@@ -114,6 +114,36 @@ export class CompetitionsService {
     );
   }
 
+  /** Compétitions d'un tournoi (pour piloter la génération de calendrier). */
+  async listByTournament(orgId: string, tournamentId: string) {
+    const tournament = await this.prisma.tournament.findFirst({
+      where: { id: tournamentId, organizationId: orgId, deletedAt: null },
+    });
+    if (!tournament) return [];
+    const comps = await this.prisma.competition.findMany({
+      where: { tournamentId },
+      include: { category: { select: { name: true } } },
+    });
+    return Promise.all(
+      comps.map(async (c) => {
+        const [matchesTotal, unscheduled] = await Promise.all([
+          this.prisma.match.count({ where: { categoryId: c.categoryId, tournamentId, deletedAt: null } }),
+          this.prisma.match.count({
+            where: { categoryId: c.categoryId, tournamentId, deletedAt: null, scheduledAt: null, status: 'SCHEDULED' },
+          }),
+        ]);
+        return {
+          id: c.id,
+          category: c.category?.name ?? 'Compétition',
+          formatType: c.formatType,
+          status: c.status,
+          matchesTotal,
+          matchesUnscheduled: unscheduled,
+        };
+      }),
+    );
+  }
+
   async getStandings(orgId: string, competitionId: string) {
     await this.scopedCompetition(orgId, competitionId);
     return this.prisma.standing.findMany({
