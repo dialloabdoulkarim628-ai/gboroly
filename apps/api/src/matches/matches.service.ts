@@ -46,6 +46,42 @@ export class MatchesService {
     });
   }
 
+  /** Liste enrichie pour l'UI organisateur : noms d'équipes + round + terrain. */
+  async listView(orgId: string, filters: { tournamentId?: string; categoryId?: string; status?: string }) {
+    const matches = await this.prisma.match.findMany({
+      where: {
+        tournament: { organizationId: orgId },
+        tournamentId: filters.tournamentId,
+        categoryId: filters.categoryId,
+        status: filters.status as MatchStatus | undefined,
+        deletedAt: null,
+      },
+      orderBy: [{ scheduledAt: 'asc' }, { order: 'asc' }],
+      include: {
+        round: { select: { name: true, roundType: true, order: true } },
+        field: { select: { name: true } },
+        homeTeam: { include: { team: { select: { name: true, logoUrl: true } } } },
+        awayTeam: { include: { team: { select: { name: true, logoUrl: true } } } },
+      },
+    });
+    return matches.map((m) => ({
+      id: m.id,
+      status: m.status,
+      scheduledAt: m.scheduledAt,
+      round: m.round?.name ?? null,
+      roundOrder: m.round?.order ?? 0,
+      field: m.field?.name ?? null,
+      homeRegistrationId: m.homeTeamId,
+      awayRegistrationId: m.awayTeamId,
+      home: m.homeTeam?.team?.name ?? null,
+      away: m.awayTeam?.team?.name ?? null,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
+      homePenalties: m.homePenalties,
+      awayPenalties: m.awayPenalties,
+    }));
+  }
+
   get(orgId: string, matchId: string) {
     return this.scoped(orgId, matchId);
   }

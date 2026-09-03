@@ -34,7 +34,7 @@ export class MatchesController {
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
   ) {
-    return this.matches.list(m.organizationId, { tournamentId, categoryId, status });
+    return this.matches.listView(m.organizationId, { tournamentId, categoryId, status });
   }
 
   @RequireMembership()

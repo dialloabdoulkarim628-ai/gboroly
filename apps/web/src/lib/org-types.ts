@@ -63,6 +63,42 @@ export const TEAM_STATUS_META: Record<TeamStatus, { label: string; className: st
   ARCHIVED: { label: 'Archivée', className: 'bg-slate-100 text-slate-500' },
 };
 
+export type MatchStatus =
+  | 'SCHEDULED'
+  | 'LIVE'
+  | 'PAUSED'
+  | 'FINISHED'
+  | 'POSTPONED'
+  | 'CANCELLED'
+  | 'FORFEIT';
+
+export interface MatchView {
+  id: string;
+  status: MatchStatus;
+  scheduledAt?: string | null;
+  round?: string | null;
+  roundOrder: number;
+  field?: string | null;
+  homeRegistrationId?: string | null;
+  awayRegistrationId?: string | null;
+  home?: string | null;
+  away?: string | null;
+  homeScore: number | null;
+  awayScore: number | null;
+  homePenalties: number | null;
+  awayPenalties: number | null;
+}
+
+export const MATCH_STATUS_META: Record<MatchStatus, { label: string; className: string }> = {
+  SCHEDULED: { label: 'À jouer', className: 'bg-slate-100 text-slate-600' },
+  LIVE: { label: 'En direct', className: 'bg-danger/10 text-danger' },
+  PAUSED: { label: 'Pause', className: 'bg-amber-100 text-amber-700' },
+  FINISHED: { label: 'Terminé', className: 'bg-field/15 text-field' },
+  POSTPONED: { label: 'Reporté', className: 'bg-amber-100 text-amber-700' },
+  CANCELLED: { label: 'Annulé', className: 'bg-slate-100 text-slate-500' },
+  FORFEIT: { label: 'Forfait', className: 'bg-danger/10 text-danger' },
+};
+
 export interface ChecklistItem {
   key: string;
   label: string;

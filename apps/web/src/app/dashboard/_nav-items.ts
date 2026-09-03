@@ -13,7 +13,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Mes tournois', href: '/dashboard/tournois', icon: 'trophy' },
   { label: 'Équipes', href: '/dashboard/equipes', icon: 'teams' },
   { label: 'Joueurs', href: '/dashboard/joueurs', icon: 'players' },
-  { label: 'Matchs', href: '/dashboard/matchs', icon: 'matches', soon: true },
+  { label: 'Matchs', href: '/dashboard/matchs', icon: 'matches' },
   { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar', soon: true },
   { label: 'Classements', href: '/dashboard/classements', icon: 'standings', soon: true },
   { label: 'Terrains', href: '/dashboard/terrains', icon: 'fields', soon: true },
