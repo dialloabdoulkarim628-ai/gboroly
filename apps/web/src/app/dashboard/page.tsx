@@ -196,7 +196,9 @@ export default function DashboardHome() {
                   </div>
                   <h3 className="truncate text-xl font-extrabold">{data.featuredTournament.name}</h3>
                   <p className="text-sm text-white/70">
-                    {data.featuredTournament.teams} équipes · {data.featuredTournament.categories} catégories
+                    {data.featuredTournament.teams} {data.featuredTournament.teams > 1 ? 'équipes' : 'équipe'} ·{' '}
+                    {data.featuredTournament.categories}{' '}
+                    {data.featuredTournament.categories > 1 ? 'catégories' : 'catégorie'}
                     {data.featuredTournament.city ? ` · ${data.featuredTournament.city}` : ''}
                   </p>
                 </div>
