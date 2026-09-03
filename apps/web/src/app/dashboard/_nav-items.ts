@@ -10,7 +10,7 @@ export interface NavItem {
 /** Menu principal du tableau de bord (ordre de la maquette). */
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Tableau de bord', href: '/dashboard', icon: 'dashboard' },
-  { label: 'Mes tournois', href: '/dashboard/tournois', icon: 'trophy', soon: true },
+  { label: 'Mes tournois', href: '/dashboard/tournois', icon: 'trophy' },
   { label: 'Équipes', href: '/dashboard/equipes', icon: 'teams', soon: true },
   { label: 'Joueurs', href: '/dashboard/joueurs', icon: 'players', soon: true },
   { label: 'Matchs', href: '/dashboard/matchs', icon: 'matches', soon: true },
