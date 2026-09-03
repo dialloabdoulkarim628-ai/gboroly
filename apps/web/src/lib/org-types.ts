@@ -191,6 +191,36 @@ export interface CompetitionInfo {
   matchesUnscheduled: number;
 }
 
+export type SponsorLevel = 'MAIN' | 'GOLD' | 'SILVER' | 'PARTNER';
+export interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  level: SponsorLevel;
+  order?: number | null;
+}
+export const SPONSOR_LEVELS: { value: SponsorLevel; label: string; className: string }[] = [
+  { value: 'MAIN', label: 'Principal', className: 'bg-energy/15 text-energy' },
+  { value: 'GOLD', label: 'Or', className: 'bg-victory/20 text-amber-700' },
+  { value: 'SILVER', label: 'Argent', className: 'bg-slate-100 text-slate-600' },
+  { value: 'PARTNER', label: 'Partenaire', className: 'bg-brand/10 text-brand' },
+];
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  publishedAt?: string | null;
+  createdAt: string;
+}
+
+export interface StatsSummary {
+  teams: number;
+  matchesPlayed: number;
+  goals: number;
+}
+
 export interface ChecklistItem {
   key: string;
   label: string;

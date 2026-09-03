@@ -36,6 +36,7 @@ interface AuthState {
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   setActiveOrg: (orgId: string) => void;
+  refreshOrgs: () => Promise<void>;
   apiFetch: <T = unknown>(path: string, init?: RequestInit) => Promise<T>;
 }
 
@@ -132,6 +133,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const refreshOrgs = useCallback(async () => {
+    const current = load() ?? session;
+    if (!current) return;
+    const res = await fetch(`${API_BASE}/organizations/mine`, {
+      headers: { Authorization: `Bearer ${current.accessToken}` },
+    });
+    if (!res.ok) return;
+    const raw = (await res.json()) as { organization: Org; role: string }[];
+    const orgs = raw.map((o) => ({ ...o.organization, role: o.role }));
+    persist({ ...current, orgs });
+  }, [persist, session]);
+
   const apiFetch = useCallback(
     async <T,>(path: string, init: RequestInit = {}): Promise<T> => {
       const current = load() ?? session;
@@ -198,9 +211,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
       setActiveOrg,
+      refreshOrgs,
       apiFetch,
     };
-  }, [ready, session, login, logout, setActiveOrg, apiFetch]);
+  }, [ready, session, login, logout, setActiveOrg, refreshOrgs, apiFetch]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

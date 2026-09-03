@@ -17,12 +17,11 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Calendrier', href: '/dashboard/calendrier', icon: 'calendar' },
   { label: 'Classements', href: '/dashboard/classements', icon: 'standings' },
   { label: 'Terrains', href: '/dashboard/terrains', icon: 'fields' },
-  { label: 'Arbitres', href: '/dashboard/arbitres', icon: 'referees', soon: true },
-  { label: 'Sponsors', href: '/dashboard/sponsors', icon: 'sponsors', soon: true },
+  { label: 'Sponsors', href: '/dashboard/sponsors', icon: 'sponsors' },
   { label: 'Paiements', href: '/dashboard/paiements', icon: 'payments' },
-  { label: 'Communications', href: '/dashboard/communications', icon: 'comms', soon: true },
-  { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'stats', soon: true },
-  { label: 'Paramètres', href: '/dashboard/parametres', icon: 'settings', soon: true },
+  { label: 'Communications', href: '/dashboard/communications', icon: 'comms' },
+  { label: 'Statistiques', href: '/dashboard/statistiques', icon: 'stats' },
+  { label: 'Paramètres', href: '/dashboard/parametres', icon: 'settings' },
 ];
 
 /** Barre du bas (mobile) — sous-ensemble. */
