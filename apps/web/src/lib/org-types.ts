@@ -99,6 +99,38 @@ export const MATCH_STATUS_META: Record<MatchStatus, { label: string; className: 
   FORFEIT: { label: 'Forfait', className: 'bg-danger/10 text-danger' },
 };
 
+export interface Standing {
+  position: number;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  group: string | null;
+  team: { name: string; logoUrl?: string | null };
+}
+
+export interface BracketNode {
+  matchId: string;
+  roundName: string;
+  roundOrder: number;
+  homeLabel: string;
+  awayLabel: string;
+  winnerTeamId?: string;
+  homeTeamId?: string;
+  awayTeamId?: string;
+}
+
+export interface Scorer {
+  playerId: string;
+  name: string;
+  team: string | null;
+  goals: number;
+}
+
 export interface ChecklistItem {
   key: string;
   label: string;

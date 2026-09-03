@@ -8,6 +8,18 @@ export class StatsController {
   constructor(private readonly stats: StatsService) {}
 
   @RequirePermissions('standing.view')
+  @Get(':id/standings')
+  standings(@ActiveMembership() m: Membership, @Param('id') tournamentId: string) {
+    return this.stats.getStandings(m.organizationId, tournamentId);
+  }
+
+  @RequirePermissions('standing.view')
+  @Get(':id/bracket')
+  bracket(@ActiveMembership() m: Membership, @Param('id') tournamentId: string) {
+    return this.stats.getBracket(m.organizationId, tournamentId);
+  }
+
+  @RequirePermissions('standing.view')
   @Get(':id/scorers')
   scorers(@ActiveMembership() m: Membership, @Param('id') tournamentId: string) {
     return this.stats.topScorers(m.organizationId, tournamentId);
