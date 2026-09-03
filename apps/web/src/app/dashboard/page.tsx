@@ -181,7 +181,9 @@ export default function DashboardHome() {
         {/* Phare */}
         <div className="rounded-2xl bg-white p-5 shadow-card lg:col-span-2">
           <h2 className="mb-4 text-lg font-bold text-ink">Mon tournoi phare</h2>
-          {data?.featuredTournament ? (
+          {isLoading ? (
+            <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
+          ) : data?.featuredTournament ? (
             <div className="overflow-hidden rounded-2xl bg-navy text-white">
               <div className="flex items-center gap-4 p-5">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-2xl font-extrabold">
@@ -249,7 +251,9 @@ export default function DashboardHome() {
             <h2 className="text-lg font-bold text-ink">Prochains matchs</h2>
           </div>
           <div className="space-y-3">
-            {data?.upcomingMatches?.length ? (
+            {isLoading ? (
+              <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
+            ) : data?.upcomingMatches?.length ? (
               data.upcomingMatches.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
                   <div className="text-center">
