@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 const STORAGE_KEY = 'gboroly_auth';
@@ -61,6 +61,9 @@ function save(s: Session | null) {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  // Refresh « single-flight » : plusieurs 401 concurrents partagent UNE seule
+  // requête de refresh (le refresh token tourne à chaque usage → sinon course).
+  const refreshing = useRef<Promise<string | null> | null>(null);
 
   useEffect(() => {
     setSession(load());
@@ -147,21 +150,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let res = await doFetch(current.accessToken);
 
-      // 401 → tentative de rafraîchissement, une seule fois.
+      // 401 → rafraîchissement single-flight (une requête partagée), puis retry.
       if (res.status === 401) {
-        const r = await fetch(`${API_BASE}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: current.refreshToken }),
-        });
-        if (!r.ok) {
+        if (!refreshing.current) {
+          const rt = (load() ?? current).refreshToken;
+          refreshing.current = fetch(`${API_BASE}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: rt }),
+          })
+            .then(async (r) => {
+              if (!r.ok) return null;
+              const nd = (await r.json()) as { accessToken: string; refreshToken: string };
+              const base = load() ?? current;
+              persist({ ...base, accessToken: nd.accessToken, refreshToken: nd.refreshToken });
+              return nd.accessToken;
+            })
+            .catch(() => null)
+            .finally(() => {
+              refreshing.current = null;
+            });
+        }
+        const newToken = await refreshing.current;
+        if (!newToken) {
           persist(null);
           throw new Error('SESSION_EXPIREE');
         }
-        const nd = (await r.json()) as { accessToken: string; refreshToken: string; user: AuthUser };
-        const refreshed: Session = { ...current, accessToken: nd.accessToken, refreshToken: nd.refreshToken };
-        persist(refreshed);
-        res = await doFetch(nd.accessToken);
+        res = await doFetch(newToken);
       }
 
       if (!res.ok) {
