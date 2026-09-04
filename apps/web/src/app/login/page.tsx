@@ -129,9 +129,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-[#EEF2F8]">
       {/* ───────── Panneau gauche (stade) ───────── */}
       <div className="relative hidden w-1/2 overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/login-bg.png')" }} />
+        <div className="absolute inset-0 bg-cover" style={{ backgroundImage: "url('/login-bg.png')", backgroundPosition: '72% bottom' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-navy/95 via-navy/70 to-navy/10" />
-        <div className="relative z-10 flex h-full flex-col px-14 py-12 text-white">
+        <div className="relative z-10 flex h-full flex-col items-center px-14 py-12 text-center text-white">
           {/* Logo + tagline */}
           <div className="flex flex-col items-center text-center">
             <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-40 w-auto object-contain" />
@@ -141,7 +141,7 @@ export default function LoginPage() {
           </div>
 
           {/* Accroche */}
-          <div className="mt-10">
+          <div className="mt-10 flex flex-col items-center">
             <h1 className="text-3xl font-extrabold leading-tight">
               La plateforme tout-en-un<br />pour vos tournois sportifs
             </h1>
@@ -150,7 +150,7 @@ export default function LoginPage() {
             </p>
 
             {/* Points forts */}
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               {[
                 { d: 'trophy' as const, t: 'Organisation', b: 'simplifiée' },
                 { d: 'team' as const, t: "Gestion d'équipes", b: 'et joueurs' },
@@ -160,7 +160,7 @@ export default function LoginPage() {
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/30 text-white">
                     <Ic d={f.d} className="h-4 w-4" />
                   </span>
-                  <span className="text-xs font-semibold leading-tight">
+                  <span className="text-left text-xs font-semibold leading-tight">
                     {f.t}<br />{f.b}
                   </span>
                 </div>
