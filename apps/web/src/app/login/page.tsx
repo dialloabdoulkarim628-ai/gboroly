@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-canvas">
       {/* Panneau marque (desktop) */}
       <div className="hidden w-1/2 flex-col justify-between bg-navy p-12 text-white lg:flex">
-        <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-20 w-auto" />
+        <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-12 w-auto max-w-[180px] object-contain" />
         <div>
           <h1 className="text-4xl font-extrabold leading-tight">
             Vos tournois,
@@ -55,7 +55,7 @@ export default function LoginPage() {
       {/* Formulaire */}
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2">
         <div className="mx-auto w-full max-w-sm">
-          <img src="/logo-gboroly.png" alt="Gboroly" className="mb-8 h-14 w-auto lg:hidden" />
+          <img src="/logo-gboroly.png" alt="Gboroly" className="mb-8 h-12 w-auto max-w-[180px] object-contain lg:hidden" />
           <h2 className="text-2xl font-extrabold text-ink">Connexion organisateur</h2>
           <p className="mt-1 text-sm text-muted">Accédez à votre tableau de bord.</p>
 
