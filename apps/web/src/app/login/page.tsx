@@ -128,8 +128,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen bg-[#EEF2F8]">
       {/* ───────── Panneau gauche (stade) ───────── */}
-      <div className="relative hidden w-1/2 overflow-hidden lg:block">
-        <div className="absolute inset-0 bg-cover" style={{ backgroundImage: "url('/login-bg.png')", backgroundPosition: '72% bottom' }} />
+      <div className="relative hidden w-1/2 overflow-hidden bg-navy lg:block">
+        <div className="absolute inset-0" style={{ backgroundImage: "url('/login-bg.png')", backgroundSize: 'auto 128%', backgroundPosition: 'right bottom', backgroundRepeat: 'no-repeat' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-navy/95 via-navy/70 to-navy/10" />
         <div className="relative z-10 flex h-full flex-col items-center px-14 py-12 text-center text-white">
           {/* Logo + tagline */}
