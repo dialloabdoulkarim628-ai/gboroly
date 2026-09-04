@@ -34,6 +34,7 @@ interface AuthState {
   user: AuthUser | null;
   activeOrg: Org | null;
   login: (identifier: string, password: string) => Promise<void>;
+  register: (input: { firstName: string; lastName: string; email: string; password: string; orgName: string }) => Promise<void>;
   logout: () => void;
   setActiveOrg: (orgId: string) => void;
   refreshOrgs: () => Promise<void>;
@@ -97,6 +98,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? ((await orgsRes.json()) as { organization: Org; role: string }[])
         : [];
       const orgs: Org[] = orgsRaw.map((o) => ({ ...o.organization, role: o.role }));
+
+      persist({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+        orgs,
+        activeOrgId: orgs[0]?.id ?? '',
+      });
+    },
+    [persist],
+  );
+
+  const register = useCallback(
+    async (input: { firstName: string; lastName: string; email: string; password: string; orgName: string }) => {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          password: input.password,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error?.message ?? 'Inscription impossible');
+      }
+      const data = (await res.json()) as { accessToken: string; refreshToken: string; user: AuthUser };
+
+      // Crée automatiquement une première organisation pour rendre le compte utilisable.
+      const orgRes = await fetch(`${API_BASE}/organizations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.accessToken}` },
+        body: JSON.stringify({ name: input.orgName || `${input.firstName} — Organisation`, country: 'CI' }),
+      });
+      let orgs: Org[] = [];
+      if (orgRes.ok) {
+        const mineRes = await fetch(`${API_BASE}/organizations/mine`, {
+          headers: { Authorization: `Bearer ${data.accessToken}` },
+        });
+        if (mineRes.ok) {
+          const raw = (await mineRes.json()) as { organization: Org; role: string }[];
+          orgs = raw.map((o) => ({ ...o.organization, role: o.role }));
+        }
+      }
 
       persist({
         accessToken: data.accessToken,
@@ -209,12 +256,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: session?.user ?? null,
       activeOrg,
       login,
+      register,
       logout,
       setActiveOrg,
       refreshOrgs,
       apiFetch,
     };
-  }, [ready, session, login, logout, setActiveOrg, refreshOrgs, apiFetch]);
+  }, [ready, session, login, register, logout, setActiveOrg, refreshOrgs, apiFetch]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
