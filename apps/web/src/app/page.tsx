@@ -62,8 +62,8 @@ export default function Landing() {
     <div className="min-h-screen bg-white text-ink">
       {/* ─────────── NAV ─────────── */}
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/85 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
-          <Link href="/"><img src="/logo-gboroly.png" alt="Gboroly" className="h-9 w-auto" /></Link>
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+          <Link href="/"><img src="/logo-gboroly.png" alt="Gboroly" className="h-14 w-auto" /></Link>
           <div className="hidden items-center gap-7 text-sm font-medium text-ink/70 md:flex">
             <a href="#fonctionnalites" className="hover:text-ink">Fonctionnalités</a>
             <Link href="/discover" className="hover:text-ink">Découvrir</Link>
@@ -110,21 +110,23 @@ export default function Landing() {
             <p className="mt-4 text-xs text-muted">Gratuit pour l'organisateur au démarrage · FCFA & Mobile Money · pensé pour l'Afrique</p>
           </div>
 
-          {/* Témoignages */}
-          <div className="flex flex-col gap-4">
-            {[
-              { q: "On a organisé notre tournoi de Maracana à Abidjan avec Gboroly — inscriptions, calendrier et classements au même endroit. Un vrai gain de temps le jour J.", n: 'Awa Diop', r: 'Organisatrice · Maracana Cup Abidjan', c: 'bg-brand/5 border-brand/15' },
-              { q: "Fini les groupes WhatsApp dans tous les sens : les équipes et les supporters suivent tout en direct sur la page du tournoi.", n: 'Kouassi Yao', r: 'Président · Académie Events', c: 'bg-victory/10 border-victory/20' },
-            ].map((t) => (
-              <div key={t.n} className={`rounded-2xl border p-5 ${t.c}`}>
-                <div className="mb-2 flex gap-0.5 text-victory">{[0, 1, 2, 3, 4].map((s) => <Ic key={s} d="star" className="h-4 w-4" />)}</div>
-                <p className="text-sm leading-relaxed text-ink/85">“{t.q}”</p>
-                <div className="mt-3 flex items-center gap-2.5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">{t.n.split(' ').map((x) => x[0]).join('')}</span>
-                  <div><div className="text-sm font-semibold text-ink">{t.n}</div><div className="text-xs text-muted">{t.r}</div></div>
+          {/* Image */}
+          <div className="relative">
+            <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-gradient-to-br from-brand/20 to-energy/20 blur-2xl" />
+            <img
+              src="/hero.png"
+              alt="Tournoi de Maracana à Abidjan"
+              className="aspect-[4/3] w-full rounded-3xl object-cover shadow-[0_25px_70px_-25px_rgba(7,27,69,0.5)] ring-1 ring-black/5"
+            />
+            <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl bg-white/95 px-3.5 py-2.5 shadow-lg backdrop-blur">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-sm font-extrabold text-white">M</span>
+              <div>
+                <div className="text-xs font-bold text-ink">Maracana Cup Abidjan</div>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-field">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-field" /> En direct · 8 équipes
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
