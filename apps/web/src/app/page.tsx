@@ -89,7 +89,7 @@ export default function Landing() {
               Organisez des tournois que{' '}
               <span className="relative inline-block">
                 <span className="absolute inset-x-0 bottom-1 -z-0 h-4 -rotate-1 bg-victory/40" />
-                <span className="relative z-10 text-brand">
+                <span className="font-script relative z-10 pr-1 text-[1.08em] text-brand">
                   <Rotating words={['les équipes', 'les joueurs', 'les organisateurs', 'les supporters']} />
                 </span>
               </span>{' '}
