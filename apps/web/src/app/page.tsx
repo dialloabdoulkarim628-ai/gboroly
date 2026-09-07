@@ -157,9 +157,9 @@ export default function Landing() {
         <div className="mx-auto max-w-4xl px-5 text-center">
           <h2 className="text-3xl font-extrabold text-navy sm:text-4xl">
             Digitalisez votre prochain tournoi de{' '}
-            <span className="text-brand"><Rotating words={['Maracana', 'football', 'basket', 'handball', 'pétanque']} /></span>
+            <span className="font-script pr-1 text-[1.08em] text-brand">Maracana</span>
           </h2>
-          <p className="mt-4 text-lg text-muted">Pensé pour votre sport — des formats de compétition jusqu'aux règles de départage.</p>
+          <p className="mt-4 text-lg text-muted">Conçu pour le Maracana — de la phase de poules aux phases finales, avec vos règles de départage.</p>
           <Link href="/login" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 font-semibold text-white shadow-lg shadow-brand/25 hover:bg-brand-dark">
             Commencer gratuitement <Ic d="arrow" className="h-4 w-4" />
           </Link>
