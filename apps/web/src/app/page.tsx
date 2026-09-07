@@ -63,7 +63,7 @@ export default function Landing() {
       {/* ─────────── NAV ─────────── */}
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/85 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link href="/"><img src="/logo-gboroly.png" alt="Gboroly" className="h-14 w-auto" /></Link>
+          <Link href="/"><img src="/logo-gboroly-horizontal.png" alt="Gboroly" className="h-11 w-auto" /></Link>
           <div className="hidden items-center gap-7 text-sm font-medium text-ink/70 md:flex">
             <a href="#fonctionnalites" className="hover:text-ink">Fonctionnalités</a>
             <Link href="/discover" className="hover:text-ink">Découvrir</Link>
@@ -292,7 +292,7 @@ export default function Landing() {
       <footer className="border-t border-slate-100 bg-white">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <img src="/logo-gboroly.png" alt="Gboroly" className="h-10 w-auto" />
+            <img src="/logo-gboroly-horizontal.png" alt="Gboroly" className="h-11 w-auto" />
             <p className="mt-3 max-w-xs text-sm text-muted">Le système d'exploitation des tournois sportifs africains. De l'inscription à la finale.</p>
           </div>
           {[
