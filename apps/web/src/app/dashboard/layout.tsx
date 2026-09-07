@@ -40,7 +40,7 @@ function SidebarInner({ orgName, onNavigate }: { orgName: string; onNavigate?: (
   return (
     <div className="flex h-full flex-col">
       <div className="px-5 py-5">
-        <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-14 w-auto" />
+        <img src="/logo-gboroly-horizontal-blanc.png" alt="Gboroly" className="h-10 w-auto" />
       </div>
       <div className="px-5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
         Menu principal

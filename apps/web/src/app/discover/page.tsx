@@ -66,7 +66,7 @@ export default async function DiscoverPage({
       <header className="bg-navy px-4 py-8 text-white">
         <div className="mx-auto max-w-4xl">
           <Link href="/" className="mb-6 inline-block">
-            <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-9 w-auto" />
+            <img src="/logo-gboroly-horizontal-blanc.png" alt="Gboroly" className="h-9 w-auto" />
           </Link>
           <h1 className="text-3xl font-extrabold">Découvrir les tournois</h1>
           <p className="mt-1 text-white/70">Trouvez un tournoi et inscrivez votre équipe en quelques clics.</p>

@@ -74,7 +74,7 @@ export default async function TournamentLayout({
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">{children}</main>
       <footer className="mx-auto flex max-w-4xl flex-col items-center gap-2 px-4 py-8 text-center text-xs text-muted">
-        <img src="/logo-gboroly.png" alt="Gboroly" className="h-8 w-auto opacity-90" />
+        <img src="/logo-gboroly-horizontal.png" alt="Gboroly" className="h-8 w-auto opacity-90" />
         <span>Propulsé par Gboroly — Organisez • Gérez • Faites vivre</span>
       </footer>
     </div>

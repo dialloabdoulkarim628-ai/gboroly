@@ -202,7 +202,7 @@ function Badges({ dark = false }: { dark?: boolean }) {
 function LogoBlock({ className = '' }: { className?: string }) {
   return (
     <div className={`flex flex-col items-center text-center ${className}`}>
-      <img src="/logo-gboroly-blanc.png" alt="Gboroly" className="h-32 w-auto object-contain sm:h-40" />
+      <img src="/logo-gboroly-horizontal-blanc.png" alt="Gboroly" className="h-16 w-auto object-contain sm:h-20" />
       <p className="mt-2 text-[11px] font-bold tracking-[0.25em] text-white/90">ORGANISEZ • GÉREZ • FAITES VIVRE</p>
       <p className="text-[11px] font-semibold tracking-[0.25em] text-white/70">VOS TOURNOIS, SIMPLEMENT.</p>
       <div className="mt-4 h-1 w-28 rounded-full bg-gradient-to-r from-field via-victory to-energy" />
