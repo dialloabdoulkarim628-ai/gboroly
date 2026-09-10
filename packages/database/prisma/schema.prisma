@@ -239,6 +239,23 @@ model User {
   refreshTokens RefreshToken[]
   authTokens    AuthToken[]
   auditLogs     AuditLog[]
+  oauthAccounts OAuthAccount[]
+}
+
+/// Identité déléguée à un fournisseur externe (Google, ...). Un User peut en
+/// lier plusieurs ; passwordHash reste nul si le compte est né d'un OAuth.
+model OAuthAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String // "google"
+  providerAccountId String // identifiant stable du fournisseur (Google "sub")
+  email             String?
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Organization {

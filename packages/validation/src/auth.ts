@@ -28,6 +28,13 @@ export const RefreshSchema = z.object({
 });
 export type RefreshInput = z.infer<typeof RefreshSchema>;
 
+/** Connexion/inscription via Google : le front transmet l'ID token (JWT) émis
+ * par Google Identity Services ; le back le vérifie côté serveur. */
+export const OAuthGoogleSchema = z.object({
+  idToken: z.string().min(10),
+});
+export type OAuthGoogleInput = z.infer<typeof OAuthGoogleSchema>;
+
 export const ForgotPasswordSchema = z.object({
   identifier: z.string().min(1), // email ou téléphone
 });

@@ -35,6 +35,7 @@ interface AuthState {
   activeOrg: Org | null;
   login: (identifier: string, password: string) => Promise<void>;
   register: (input: { firstName: string; lastName: string; email: string; password: string; orgName: string }) => Promise<void>;
+  oauthGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
   setActiveOrg: (orgId: string) => void;
   refreshOrgs: () => Promise<void>;
@@ -156,6 +157,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persist],
   );
 
+  const oauthGoogle = useCallback(
+    async (idToken: string) => {
+      const res = await fetch(`${API_BASE}/auth/oauth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error?.message ?? 'Connexion Google impossible');
+      }
+      const data = (await res.json()) as {
+        accessToken: string;
+        refreshToken: string;
+        user: AuthUser;
+      };
+
+      // Récupère les organisations ; en crée une par défaut si le compte n'en a
+      // aucune (nouveau compte Google, ou compte existant sans organisation).
+      const fetchMine = async () => {
+        const r = await fetch(`${API_BASE}/organizations/mine`, {
+          headers: { Authorization: `Bearer ${data.accessToken}` },
+        });
+        return r.ok ? ((await r.json()) as { organization: Org; role: string }[]) : [];
+      };
+      let raw = await fetchMine();
+      if (raw.length === 0) {
+        await fetch(`${API_BASE}/organizations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.accessToken}` },
+          body: JSON.stringify({ name: `${data.user.firstName} — Organisation`, country: 'CI' }),
+        }).catch(() => {});
+        raw = await fetchMine();
+      }
+      const orgs: Org[] = raw.map((o) => ({ ...o.organization, role: o.role }));
+
+      persist({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+        orgs,
+        activeOrgId: orgs[0]?.id ?? '',
+      });
+    },
+    [persist],
+  );
+
   const logout = useCallback(() => {
     const rt = session?.refreshToken;
     if (rt) {
@@ -257,12 +305,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       activeOrg,
       login,
       register,
+      oauthGoogle,
       logout,
       setActiveOrg,
       refreshOrgs,
       apiFetch,
     };
-  }, [ready, session, login, register, logout, setActiveOrg, refreshOrgs, apiFetch]);
+  }, [ready, session, login, register, oauthGoogle, logout, setActiveOrg, refreshOrgs, apiFetch]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

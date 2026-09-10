@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 import { AuthTokenType, Prisma, User } from '@gboroly/database';
 import type {
   ForgotPasswordInput,
@@ -33,6 +34,8 @@ const OTP_MAX_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
+  private googleClient?: OAuth2Client;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -65,6 +68,115 @@ export class AuthService {
     }
     const tokens = await this.issueTokens(user, ctx);
     return { user: this.sanitize(user), ...tokens };
+  }
+
+  // ─────────────────────────── OAuth (Google) ───────────────────────────
+
+  /**
+   * Connexion/inscription via Google. Le front envoie l'ID token (JWT) émis par
+   * Google Identity Services ; on le vérifie côté serveur (signature, `aud`,
+   * `iss`, expiration) puis on résout l'utilisateur en 3 temps :
+   *   1) compte OAuth déjà lié → connexion ;
+   *   2) email déjà connu (compte mot de passe) → on lie le compte Google ;
+   *   3) inconnu → on crée le User (sans mot de passe) + le lien OAuth.
+   * `isNew` indique au front s'il doit provisionner une organisation par défaut.
+   */
+  async oauthGoogle(idToken: string, ctx: RequestContext) {
+    const profile = await this.verifyGoogleIdToken(idToken);
+
+    // 1) Lien OAuth existant.
+    const linked = await this.prisma.oAuthAccount.findUnique({
+      where: {
+        provider_providerAccountId: { provider: 'google', providerAccountId: profile.sub },
+      },
+      include: { user: true },
+    });
+    if (linked) {
+      const tokens = await this.issueTokens(linked.user, ctx);
+      return { user: this.sanitize(linked.user), isNew: false, ...tokens };
+    }
+
+    // 2) Email déjà connu → on rattache le compte Google au User existant.
+    const existing = profile.email
+      ? await this.prisma.user.findUnique({ where: { email: profile.email } })
+      : null;
+    if (existing) {
+      await this.linkGoogleAccount(existing.id, profile);
+      // L'email vérifié par Google vaut vérification de notre côté.
+      const user =
+        profile.emailVerified && !existing.emailVerifiedAt
+          ? await this.prisma.user.update({
+              where: { id: existing.id },
+              data: { emailVerifiedAt: new Date() },
+            })
+          : existing;
+      const tokens = await this.issueTokens(user, ctx);
+      return { user: this.sanitize(user), isNew: false, ...tokens };
+    }
+
+    // 3) Nouveau compte, sans mot de passe.
+    const user = await this.prisma.user.create({
+      data: {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email ?? null,
+        avatarUrl: profile.picture ?? null,
+        emailVerifiedAt: profile.emailVerified ? new Date() : null,
+        oauthAccounts: {
+          create: {
+            provider: 'google',
+            providerAccountId: profile.sub,
+            email: profile.email ?? null,
+          },
+        },
+      },
+    });
+    const tokens = await this.issueTokens(user, ctx);
+    return { user: this.sanitize(user), isNew: true, ...tokens };
+  }
+
+  private async linkGoogleAccount(userId: string, profile: GoogleProfile) {
+    await this.prisma.oAuthAccount.create({
+      data: {
+        userId,
+        provider: 'google',
+        providerAccountId: profile.sub,
+        email: profile.email ?? null,
+      },
+    });
+  }
+
+  private async verifyGoogleIdToken(idToken: string): Promise<GoogleProfile> {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
+    if (!clientId) {
+      throw new UnauthorizedException(
+        err('OAUTH_NOT_CONFIGURED', 'Connexion Google non configurée sur le serveur'),
+      );
+    }
+    this.googleClient ??= new OAuth2Client(clientId);
+
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({ idToken, audience: clientId });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException(err('OAUTH_INVALID_TOKEN', 'Jeton Google invalide'));
+    }
+    if (!payload?.sub) {
+      throw new UnauthorizedException(err('OAUTH_INVALID_TOKEN', 'Jeton Google invalide'));
+    }
+
+    return {
+      sub: payload.sub,
+      email: payload.email ?? undefined,
+      emailVerified: payload.email_verified === true,
+      firstName: payload.given_name?.trim() || payload.name?.split(' ')[0] || 'Utilisateur',
+      lastName:
+        payload.family_name?.trim() ||
+        payload.name?.split(' ').slice(1).join(' ').trim() ||
+        'Gboroly',
+      picture: payload.picture ?? undefined,
+    };
   }
 
   // ─────────────────────────── Tokens / Sessions ───────────────────────────
@@ -249,6 +361,15 @@ export class AuthService {
     const { passwordHash: _pw, ...safe } = user;
     return safe;
   }
+}
+
+interface GoogleProfile {
+  sub: string;
+  email?: string;
+  emailVerified: boolean;
+  firstName: string;
+  lastName: string;
+  picture?: string;
 }
 
 function err(code: string, message: string) {

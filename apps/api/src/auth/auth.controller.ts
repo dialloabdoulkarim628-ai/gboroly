@@ -2,6 +2,7 @@ import { Body, Controller, Get, Headers, Ip, Post } from '@nestjs/common';
 import {
   ForgotPasswordSchema,
   LoginSchema,
+  OAuthGoogleSchema,
   RefreshSchema,
   RegisterSchema,
   ResetPasswordSchema,
@@ -9,6 +10,7 @@ import {
   VerifyPhoneSchema,
   type ForgotPasswordInput,
   type LoginInput,
+  type OAuthGoogleInput,
   type RefreshInput,
   type RegisterInput,
   type ResetPasswordInput,
@@ -41,6 +43,16 @@ export class AuthController {
     @Ip() ip: string,
   ) {
     return this.auth.login(body, { userAgent, ip });
+  }
+
+  @Public()
+  @Post('oauth/google')
+  oauthGoogle(
+    @Body(new ZodValidationPipe(OAuthGoogleSchema)) body: OAuthGoogleInput,
+    @Headers('user-agent') userAgent: string,
+    @Ip() ip: string,
+  ) {
+    return this.auth.oauthGoogle(body.idToken, { userAgent, ip });
   }
 
   @Public()

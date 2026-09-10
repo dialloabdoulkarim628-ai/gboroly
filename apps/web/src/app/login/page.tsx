@@ -1,8 +1,39 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+/* Google Identity Services : chargé une seule fois pour toute la page. */
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (cfg: { client_id: string; callback: (r: { credential?: string }) => void }) => void;
+          renderButton: (el: HTMLElement, opts: Record<string, unknown>) => void;
+        };
+      };
+    };
+    __gisPromise?: Promise<void>;
+  }
+}
+function loadGis(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('SSR'));
+  if (window.__gisPromise) return window.__gisPromise;
+  window.__gisPromise = new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('GIS_LOAD_FAILED'));
+    document.head.appendChild(s);
+  });
+  return window.__gisPromise;
+}
 
 /* ─────────────────────────── Icônes inline ─────────────────────────── */
 const I = {
@@ -47,6 +78,75 @@ const MicrosoftLogo = () => (
     <rect x="2" y="12.5" width="9.5" height="9.5" fill="#00A4EF" /><rect x="12.5" y="12.5" width="9.5" height="9.5" fill="#FFB900" />
   </svg>
 );
+
+/* ─────────────────────────── Bouton Google (officiel GIS) ─────────────────────────── */
+function GoogleButton({
+  dark = false,
+  onStart,
+  onError,
+  onInfo,
+  fallbackClass,
+}: {
+  dark?: boolean;
+  onStart: () => void;
+  onError: (msg: string) => void;
+  onInfo: (msg: string) => void;
+  fallbackClass: string;
+}) {
+  const { oauthGoogle } = useAuth();
+  const router = useRouter();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    let cancelled = false;
+    loadGis()
+      .then(() => {
+        if (cancelled || !ref.current || !window.google) return;
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID as string,
+          callback: async (resp) => {
+            if (!resp.credential) return;
+            onStart();
+            try {
+              await oauthGoogle(resp.credential);
+              router.replace('/dashboard');
+            } catch (e) {
+              onError((e as Error).message);
+            }
+          },
+        });
+        ref.current.innerHTML = '';
+        window.google.accounts.id.renderButton(ref.current, {
+          type: 'standard',
+          theme: dark ? 'filled_black' : 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          logo_alignment: 'center',
+          locale: 'fr',
+        });
+      })
+      .catch(() => onError('Impossible de charger la connexion Google.'));
+    return () => {
+      cancelled = true;
+    };
+  }, [dark, oauthGoogle, router, onStart, onError]);
+
+  // Repli tant que le Client ID Google n'est pas configuré côté déploiement.
+  if (!GOOGLE_CLIENT_ID) {
+    return (
+      <button
+        type="button"
+        onClick={() => onInfo('La connexion via Google sera disponible très bientôt.')}
+        className={fallbackClass}
+      >
+        <GoogleG /> <span>Continuer avec Google</span>
+      </button>
+    );
+  }
+  return <div ref={ref} className="flex min-h-[44px] justify-center [color-scheme:light]" />;
+}
 
 /* ─────────────────────────── Carte formulaire (partagée) ─────────────────────────── */
 function AuthCard({ dark = false }: { dark?: boolean }) {
@@ -131,8 +231,6 @@ function AuthCard({ dark = false }: { dark?: boolean }) {
             </label>
             <button type="button" onClick={() => setInfo('La récupération de mot de passe arrive bientôt.')} className={`font-semibold ${linkC} hover:underline`}>Mot de passe oublié ?</button>
           </div>
-          {error && <div className="rounded-xl bg-danger/15 px-4 py-2.5 text-sm text-red-300">{error}</div>}
-          {info && <div className={`rounded-xl px-4 py-2.5 text-sm ${dark ? 'bg-white/10 text-white/80' : 'bg-brand/5 text-brand'}`}>{info}</div>}
           <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1D63E0] to-brand py-3 font-semibold text-white shadow-lg shadow-brand/25 transition-opacity hover:opacity-95 disabled:opacity-60">
             {loading ? 'Connexion…' : (<><Ic d="arrow" className="h-4 w-4" /> Se connecter</>)}
           </button>
@@ -150,7 +248,6 @@ function AuthCard({ dark = false }: { dark?: boolean }) {
             <input className={iEl} type={showPwd ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe (8 caractères min.)" required minLength={8} />
             <button type="button" onClick={() => setShowPwd((v) => !v)} className={iconMuted} aria-label="Afficher le mot de passe"><Ic d={showPwd ? 'eyeOff' : 'eye'} className="h-5 w-5" /></button>
           </div>
-          {error && <div className="rounded-xl bg-danger/15 px-4 py-2.5 text-sm text-red-300">{error}</div>}
           <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1D63E0] to-brand py-3 font-semibold text-white shadow-lg shadow-brand/25 transition-opacity hover:opacity-95 disabled:opacity-60">
             {loading ? 'Création…' : (<><Ic d="userPlus" className="h-4 w-4" /> Créer mon compte</>)}
           </button>
@@ -160,11 +257,36 @@ function AuthCard({ dark = false }: { dark?: boolean }) {
       <div className={`my-6 flex items-center gap-3 text-xs ${sub}`}>
         <div className={`h-px flex-1 ${divider}`} /> ou continuer avec <div className={`h-px flex-1 ${divider}`} />
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        <button type="button" onClick={() => setInfo('La connexion via Google arrive bientôt.')} className={social}><GoogleG /> <span className="hidden sm:inline">Google</span></button>
-        <button type="button" onClick={() => setInfo('La connexion via Apple arrive bientôt.')} className={social}><AppleLogo light={dark} /> <span className="hidden sm:inline">Apple</span></button>
-        <button type="button" onClick={() => setInfo('La connexion via Microsoft arrive bientôt.')} className={social}><MicrosoftLogo /> <span className="hidden sm:inline">Microsoft</span></button>
+
+      <GoogleButton
+        dark={dark}
+        fallbackClass={social}
+        onStart={() => { setError(null); setInfo(null); setLoading(true); }}
+        onError={(m) => { setError(m); setLoading(false); }}
+        onInfo={(m) => { setError(null); setInfo(m); }}
+      />
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {([['Apple', <AppleLogo key="a" light={dark} />], ['Microsoft', <MicrosoftLogo key="m" />]] as const).map(([label, logo]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setInfo(`La connexion via ${label} arrive bientôt.`)}
+            className={`${social} opacity-55`}
+            title="Bientôt disponible"
+          >
+            {logo}
+            <span className="hidden sm:inline">{label}</span>
+            <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${dark ? 'bg-white/15 text-white/70' : 'bg-slate-100 text-muted'}`}>Bientôt</span>
+          </button>
+        ))}
       </div>
+
+      {(error || info) && (
+        <div className={`mt-4 rounded-xl px-4 py-2.5 text-center text-sm ${error ? 'bg-danger/15 text-red-300' : dark ? 'bg-white/10 text-white/80' : 'bg-brand/5 text-brand'}`}>
+          {error ?? info}
+        </div>
+      )}
     </div>
   );
 }
