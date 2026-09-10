@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { TournamentStatus } from '@gboroly/database';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -86,19 +87,24 @@ export class DashboardService {
     };
   }
 
-  /** Tournoi mis en avant : le 1er ONGOING, sinon le plus récent publié/brouillon. */
+  /**
+   * Tournoi mis en avant : on privilégie le plus « vivant » par ordre de statut
+   * (en cours > publié > terminé > brouillon > archivé), et le plus récemment
+   * mis à jour au sein d'un même statut. On ne met jamais en avant un tournoi
+   * annulé. Ainsi un tournoi publié (ex. Maracana) passe devant un brouillon
+   * récent (ex. « Coupe de la Paix »).
+   */
   private async pickFeatured(organizationId: string) {
-    const t =
-      (await this.prisma.tournament.findFirst({
-        where: { organizationId, deletedAt: null, status: 'ONGOING' },
+    const priority: TournamentStatus[] = ['ONGOING', 'PUBLISHED', 'COMPLETED', 'DRAFT', 'ARCHIVED'];
+    let t = null;
+    for (const status of priority) {
+      t = await this.prisma.tournament.findFirst({
+        where: { organizationId, deletedAt: null, status },
         orderBy: { updatedAt: 'desc' },
         include: { sport: { select: { name: true } }, _count: { select: { categories: true } } },
-      })) ??
-      (await this.prisma.tournament.findFirst({
-        where: { organizationId, deletedAt: null, status: { notIn: ['CANCELLED', 'ARCHIVED'] } },
-        orderBy: { createdAt: 'desc' },
-        include: { sport: { select: { name: true } }, _count: { select: { categories: true } } },
-      }));
+      });
+      if (t) break;
+    }
     if (!t) return null;
 
     const [teams, competitions, knockoutMatches, finishedGroupMatches] = await Promise.all([
