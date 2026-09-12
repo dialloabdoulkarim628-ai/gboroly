@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import {
   PAYMENT_METHODS,
@@ -152,12 +153,25 @@ export default function PaiementsPage() {
               ))}
             </select>
           )}
-          <button onClick={() => setOpen(true)} disabled={!tid} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50">
-            <Icon name="plus" className="h-4 w-4" /> Encaisser
-          </button>
+          {!!tid && (
+            <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+              <Icon name="plus" className="h-4 w-4" /> Encaisser
+            </button>
+          )}
         </div>
       </div>
 
+      {tournaments.data && tournaments.data.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand"><Icon name="trophy" className="h-7 w-7" /></div>
+          <h2 className="mt-4 text-lg font-bold text-ink">Aucun tournoi pour l’instant</h2>
+          <p className="mt-1 text-sm text-muted">Les encaissements sont liés aux inscriptions d’un tournoi. Créez d’abord un tournoi.</p>
+          <Link href="/dashboard/tournois/nouveau" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+            <Icon name="plus" className="h-4 w-4" /> Créer un tournoi
+          </Link>
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryCard label="Total encaissé" value={money(summary.data?.gross ?? 0)} accent="text-ink" />
         <SummaryCard label="Revenus organisateur" value={money(summary.data?.organizerRevenue ?? 0)} accent="text-field" />
@@ -195,6 +209,8 @@ export default function PaiementsPage() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {open && tid && <RecordPaymentModal tournamentId={tid} onClose={() => setOpen(false)} />}
     </div>

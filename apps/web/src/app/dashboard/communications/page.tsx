@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import type { Announcement, Tournament } from '@/lib/org-types';
 import { Icon } from '../_icons';
@@ -84,13 +85,24 @@ export default function CommunicationsPage() {
               {tournaments.data.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           )}
-          <button onClick={() => setOpen(true)} disabled={!tid} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50">
-            <Icon name="plus" className="h-4 w-4" /> Annonce
-          </button>
+          {!!tid && (
+            <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+              <Icon name="plus" className="h-4 w-4" /> Annonce
+            </button>
+          )}
         </div>
       </div>
 
-      {announcements.isLoading ? (
+      {tournaments.data && tournaments.data.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand"><Icon name="trophy" className="h-7 w-7" /></div>
+          <h2 className="mt-4 text-lg font-bold text-ink">Aucun tournoi pour l’instant</h2>
+          <p className="mt-1 text-sm text-muted">Les annonces sont rattachées à un tournoi. Créez d’abord un tournoi pour communiquer avec vos équipes et supporters.</p>
+          <Link href="/dashboard/tournois/nouveau" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+            <Icon name="plus" className="h-4 w-4" /> Créer un tournoi
+          </Link>
+        </div>
+      ) : announcements.isLoading ? (
         <div className="h-40 animate-pulse rounded-2xl bg-white shadow-card" />
       ) : !announcements.data?.length ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
