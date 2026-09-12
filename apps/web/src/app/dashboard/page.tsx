@@ -145,12 +145,9 @@ export default function DashboardHome() {
           <p className="mt-1 text-sm text-muted">Voici un aperçu de vos activités aujourd’hui.</p>
         </div>
         <div className="flex gap-2">
-          <button className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
+          <Link href="/dashboard/tournois/nouveau" className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark">
             <Icon name="plus" className="h-4 w-4" /> Créer un tournoi
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-ink hover:bg-slate-50">
-            <Icon name="import" className="h-4 w-4" /> Importer
-          </button>
+          </Link>
         </div>
       </div>
 
