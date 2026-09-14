@@ -118,6 +118,11 @@ export default function CalendrierPage() {
     queryFn: () => apiFetch<Tournament[]>('/tournaments'),
     enabled: !!activeOrg,
   });
+  // Présélection via ?t=<id> (lien depuis la page du tournoi).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('t');
+    if (p) setTid(p);
+  }, []);
   useEffect(() => {
     if (!tid && tournaments.data?.length) setTid(tournaments.data[0].id);
   }, [tid, tournaments.data]);

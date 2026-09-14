@@ -152,8 +152,17 @@ export interface PaymentSummary {
 export interface Registration {
   id: string;
   status: string;
+  categoryId?: string | null;
   paymentStatus?: string | null;
   team: { id: string; name: string; logoUrl?: string | null };
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  minSquad?: number | null;
+  maxSquad?: number | null;
+  maxTeams?: number | null;
 }
 
 export const PAYMENT_METHODS: { value: string; label: string }[] = [
