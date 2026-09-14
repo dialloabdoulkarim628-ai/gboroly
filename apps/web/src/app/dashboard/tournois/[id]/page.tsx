@@ -541,7 +541,7 @@ export default function TournoiDetailPage() {
             {checklist.isLoading ? (
               <div className="h-24 animate-pulse rounded-xl bg-slate-50" />
             ) : (
-              items.map((it) => (
+              items.filter((it) => it.key !== 'categories').map((it) => (
                 <div key={it.key} className="flex items-center gap-2 text-sm">
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${

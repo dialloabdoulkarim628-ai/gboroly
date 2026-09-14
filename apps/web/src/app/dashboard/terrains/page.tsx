@@ -63,10 +63,10 @@ function AddFieldForm({ venueId, tid }: { venueId: string; tid: string }) {
     },
   });
   return (
-    <form onSubmit={(e) => { e.preventDefault(); if (name) add.mutate(); }} className="mt-3 flex gap-2">
+    <form onSubmit={(e) => { e.preventDefault(); if (name.trim()) add.mutate(); }} className="mt-3 flex gap-2">
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nouveau terrain (ex : Terrain A)" className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand" />
-      <button type="submit" disabled={!name || add.isPending} className="rounded-lg bg-brand/10 px-3 py-1.5 text-sm font-semibold text-brand hover:bg-brand/20 disabled:opacity-50">
-        + Terrain
+      <button type="submit" disabled={!name.trim() || add.isPending} className="shrink-0 rounded-lg bg-brand px-4 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40">
+        {add.isPending ? '…' : '+ Terrain'}
       </button>
     </form>
   );
