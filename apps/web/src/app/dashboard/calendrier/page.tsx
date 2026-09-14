@@ -21,12 +21,39 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
   const { apiFetch } = useAuth();
   const qc = useQueryClient();
   const [compId, setCompId] = useState('');
-  const [day, setDay] = useState('');
+  const [days, setDays] = useState<string[]>([]);
+  const [dFrom, setDFrom] = useState('');
+  const [dTo, setDTo] = useState('');
+  const [weekendsOnly, setWeekendsOnly] = useState(false);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('19:00');
   const [duration, setDuration] = useState('60');
   const [rest, setRest] = useState('60');
   const [error, setError] = useState<string | null>(null);
+
+  // Ajoute un jour seul (dTo vide) ou tous les jours de la plage [dFrom, dTo].
+  const addDays = () => {
+    if (!dFrom) return;
+    const out: string[] = [];
+    const end = dTo && dTo >= dFrom ? dTo : dFrom;
+    // Itère de date à date en composantes LOCALES (pas d'UTC → aucun décalage de fuseau).
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    for (let d = new Date(`${dFrom}T12:00:00`); ; d.setDate(d.getDate() + 1)) {
+      const cur = iso(d);
+      const dow = d.getDay(); // 0 = dim., 6 = sam.
+      if (!weekendsOnly || dow === 0 || dow === 6) out.push(cur);
+      if (cur >= end) break;
+    }
+    setDays((prev) => Array.from(new Set([...prev, ...out])).sort());
+    setDFrom('');
+    setDTo('');
+  };
+  const removeDay = (iso: string) => setDays((prev) => prev.filter((d) => d !== iso));
+  const dayLabel = (iso: string) =>
+    new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(
+      new Date(`${iso}T12:00:00`),
+    );
 
   const comps = useQuery({
     queryKey: ['competitions', tid],
@@ -38,7 +65,7 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
       apiFetch(`/competitions/${compId}/schedule`, {
         method: 'POST',
         body: JSON.stringify({
-          days: [day],
+          days,
           startTime,
           endTime,
           matchDurationMin: Number(duration),
@@ -72,8 +99,47 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
             </select>
           </div>
           <div>
-            <label className={labelCls}>Jour *</label>
-            <input type="date" className={inputCls} value={day} onChange={(e) => setDay(e.target.value)} required />
+            <label className={labelCls}>Jours de compétition *</label>
+            <p className="mb-2 text-xs text-muted">
+              Ajoutez un jour, ou une plage de dates (« Du … Au »). Idéal pour un tournoi sur plusieurs jours ou semaines.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <span className="mb-1 block text-[11px] font-medium text-muted">Du</span>
+                <input type="date" className={inputCls} value={dFrom} onChange={(e) => setDFrom(e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <span className="mb-1 block text-[11px] font-medium text-muted">Au (optionnel)</span>
+                <input type="date" className={inputCls} value={dTo} min={dFrom || undefined} onChange={(e) => setDTo(e.target.value)} />
+              </div>
+              <button
+                type="button"
+                onClick={addDays}
+                disabled={!dFrom}
+                className="shrink-0 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-40"
+              >
+                Ajouter
+              </button>
+            </div>
+            {dTo && dTo > dFrom && (
+              <label className="mt-2 flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={weekendsOnly} onChange={(e) => setWeekendsOnly(e.target.checked)} />
+                Week-ends uniquement (samedi &amp; dimanche)
+              </label>
+            )}
+            {days.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {days.map((d) => (
+                  <span key={d} className="inline-flex items-center gap-2 rounded-full bg-brand/10 px-3 py-1 text-sm font-medium text-brand">
+                    {dayLabel(d)}
+                    <button type="button" onClick={() => removeDay(d)} className="text-brand/60 hover:text-danger" aria-label={`Retirer ${d}`}>
+                      <Icon name="close" className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {days.length === 0 && <p className="mt-2 text-xs text-muted">Aucun jour ajouté pour l’instant.</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -98,8 +164,8 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
           {error && <div className="rounded-xl bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</div>}
           <div className="flex justify-end gap-3">
             <button type="button" onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted hover:bg-slate-50">Annuler</button>
-            <button type="submit" disabled={gen.isPending || !compId || !day} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
-              {gen.isPending ? 'Génération…' : 'Générer'}
+            <button type="submit" disabled={gen.isPending || !compId || days.length === 0} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-60">
+              {gen.isPending ? 'Génération…' : `Générer${days.length ? ` (${days.length} j.)` : ''}`}
             </button>
           </div>
         </form>
