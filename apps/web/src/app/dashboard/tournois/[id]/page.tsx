@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import {
   fmtDate,
@@ -62,88 +62,23 @@ function SetupCard({
   );
 }
 
-/* ─────────────────────────── 1. Catégories ─────────────────────────── */
-function CategoriesSection({ id, onChange }: { id: string; onChange: () => void }) {
-  const { apiFetch } = useAuth();
-  const qc = useQueryClient();
-  const [name, setName] = useState('');
-
-  const cats = useQuery({
-    queryKey: ['categories', id],
-    queryFn: () => apiFetch<Category[]>(`/tournaments/${id}/categories`),
-  });
-  const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['categories', id] });
-    onChange();
-  };
-  const add = useMutation({
-    mutationFn: (n: string) =>
-      apiFetch(`/tournaments/${id}/categories`, { method: 'POST', body: JSON.stringify({ name: n }) }),
-    onSuccess: () => {
-      setName('');
-      invalidate();
-    },
-  });
-  const remove = useMutation({
-    mutationFn: (catId: string) => apiFetch(`/categories/${catId}`, { method: 'DELETE' }),
-    onSuccess: invalidate,
-  });
-
-  return (
-    <SetupCard
-      step={1}
-      title="Catégories"
-      subtitle="Ex. Senior, Vétéran, Féminine — au moins une est requise."
-      done={!!cats.data?.length}
-    >
-      {cats.data && cats.data.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {cats.data.map((c) => (
-            <span key={c.id} className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-ink">
-              {c.name}
-              <button
-                onClick={() => remove.mutate(c.id)}
-                className="text-muted hover:text-danger"
-                aria-label={`Retirer ${c.name}`}
-              >
-                <Icon name="close" className="h-3.5 w-3.5" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (name.trim()) add.mutate(name.trim());
-        }}
-        className="flex gap-2"
-      >
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nom de la catégorie (ex : Senior)"
-          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
-        />
-        <button
-          type="submit"
-          disabled={!name.trim() || add.isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
-        >
-          <Icon name="plus" className="h-4 w-4" /> Ajouter
-        </button>
-      </form>
-      {add.error && <p className="mt-2 text-xs text-danger">{(add.error as Error).message}</p>}
-    </SetupCard>
-  );
-}
-
-/* ─────────────────────────── 2. Équipes / inscriptions ─────────────────────────── */
-function TeamsSection({ id, onChange }: { id: string; onChange: () => void }) {
+/* ─────────────────────────── 1. Équipes / inscriptions ───────────────────────────
+ * La catégorie est gérée en coulisses : une catégorie par défaut (nom du tournoi)
+ * est créée automatiquement si aucune n'existe, puis toutes les équipes y sont
+ * inscrites. L'organisateur n'a donc jamais à manipuler la notion de catégorie. */
+function TeamsSection({
+  id,
+  defaultCategoryName,
+  onChange,
+}: {
+  id: string;
+  defaultCategoryName: string;
+  onChange: () => void;
+}) {
   const { apiFetch } = useAuth();
   const qc = useQueryClient();
   const [teamId, setTeamId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const ensuring = useRef(false);
 
   const teams = useQuery({ queryKey: ['teams'], queryFn: () => apiFetch<Team[]>('/teams') });
   const cats = useQuery({
@@ -155,13 +90,38 @@ function TeamsSection({ id, onChange }: { id: string; onChange: () => void }) {
     queryFn: () => apiFetch<Registration[]>(`/tournaments/${id}/registrations`),
   });
 
+  const ensureCategory = useMutation({
+    mutationFn: () =>
+      apiFetch<Category>(`/tournaments/${id}/categories`, {
+        method: 'POST',
+        body: JSON.stringify({ name: defaultCategoryName }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories', id] });
+      onChange();
+    },
+  });
+
+  // Provisionne une catégorie par défaut une seule fois s'il n'y en a aucune.
+  useEffect(() => {
+    if (cats.data && cats.data.length === 0 && !ensuring.current) {
+      ensuring.current = true;
+      ensureCategory.mutate();
+    }
+  }, [cats.data]);
+
+  const categoryId = cats.data?.[0]?.id ?? '';
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['registrations', id] });
     onChange();
   };
   const register = useMutation({
-    mutationFn: (body: { teamId: string; categoryId: string }) =>
-      apiFetch(`/tournaments/${id}/registrations`, { method: 'POST', body: JSON.stringify(body) }),
+    mutationFn: (tId: string) =>
+      apiFetch(`/tournaments/${id}/registrations`, {
+        method: 'POST',
+        body: JSON.stringify({ teamId: tId, categoryId }),
+      }),
     onSuccess: () => {
       setTeamId('');
       invalidate();
@@ -182,20 +142,15 @@ function TeamsSection({ id, onChange }: { id: string; onChange: () => void }) {
   const approvedCount = (regs.data ?? []).filter((r) => r.status === 'APPROVED').length;
 
   const noTeams = teams.data && teams.data.length === 0;
-  const noCats = cats.data && cats.data.length === 0;
 
   return (
     <SetupCard
-      step={2}
+      step={1}
       title="Équipes"
       subtitle="Inscrivez des équipes puis validez-les — 2 validées minimum."
       done={approvedCount >= 2}
     >
-      {noCats ? (
-        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-muted">
-          Créez d’abord une catégorie (étape 1) pour pouvoir inscrire des équipes.
-        </p>
-      ) : noTeams ? (
+      {noTeams ? (
         <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-muted">
           Vous n’avez pas encore d’équipe dans votre organisation.{' '}
           <Link href="/dashboard/equipes" className="font-semibold text-brand hover:underline">
@@ -206,7 +161,7 @@ function TeamsSection({ id, onChange }: { id: string; onChange: () => void }) {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (teamId && categoryId) register.mutate({ teamId, categoryId });
+            if (teamId && categoryId) register.mutate(teamId);
           }}
           className="flex flex-col gap-2 sm:flex-row"
         >
@@ -218,16 +173,6 @@ function TeamsSection({ id, onChange }: { id: string; onChange: () => void }) {
             <option value="">Choisir une équipe…</option>
             {availableTeams.map((t) => (
               <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-          >
-            <option value="">Catégorie…</option>
-            {(cats.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
           <button
@@ -411,13 +356,13 @@ function FormatSection({ id, onChange }: { id: string; onChange: () => void }) {
 
   return (
     <SetupCard
-      step={3}
+      step={2}
       title="Format de compétition"
-      subtitle="Choisissez comment se joue chaque catégorie (après avoir validé les équipes)."
+      subtitle="Choisissez comment se joue le tournoi (après avoir validé les équipes)."
       done={!!comps.data?.length && cats.data?.length === comps.data?.length}
     >
       {cats.data && cats.data.length === 0 ? (
-        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-muted">Créez d’abord une catégorie (étape 1).</p>
+        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-muted">Préparation…</p>
       ) : (
         <div className="space-y-2">
           {(cats.data ?? []).map((c) => {
@@ -560,13 +505,12 @@ export default function TournoiDetailPage() {
           {editable && (
             <>
               <h2 className="pt-2 text-lg font-bold text-ink">Configuration du tournoi</h2>
-              <CategoriesSection id={id} onChange={refreshChecklist} />
-              <TeamsSection id={id} onChange={refreshChecklist} />
+              <TeamsSection id={id} defaultCategoryName={tournament.name} onChange={refreshChecklist} />
               <FormatSection id={id} onChange={refreshChecklist} />
 
               {/* Terrains & Calendrier : pages dédiées */}
               <SetupCard
-                step={4}
+                step={3}
                 title="Terrains & Calendrier"
                 subtitle="Ajoutez vos terrains puis générez l’agenda des matchs."
               >
