@@ -23,7 +23,9 @@ export const GenerateScheduleSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/).default('20:00'),
   matchDurationMin: z.number().int().positive().max(240).default(60),
   breakMin: z.number().int().min(0).max(120).default(0),
-  restMinutesPerTeam: z.number().int().min(0).max(600).default(60),
+  // Repos min. d'une équipe entre 2 matchs. Jusqu'à 60 jours (86400 min) pour
+  // couvrir les tournois étalés sur plusieurs semaines (saisi en min/h/jours côté UI).
+  restMinutesPerTeam: z.number().int().min(0).max(86400).default(60),
   /** true = ne persiste pas, renvoie seulement l'aperçu. */
   dryRun: z.boolean().default(false),
 });

@@ -29,7 +29,11 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
   const [endTime, setEndTime] = useState('19:00');
   const [duration, setDuration] = useState('60');
   const [rest, setRest] = useState('60');
+  const [restUnit, setRestUnit] = useState<'min' | 'h' | 'j'>('min');
   const [error, setError] = useState<string | null>(null);
+
+  const restToMinutes = () =>
+    Number(rest) * (restUnit === 'j' ? 1440 : restUnit === 'h' ? 60 : 1);
 
   // Ajoute un jour seul (dTo vide) ou tous les jours de la plage [dFrom, dTo].
   const addDays = () => {
@@ -69,7 +73,7 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
           startTime,
           endTime,
           matchDurationMin: Number(duration),
-          restMinutesPerTeam: Number(rest),
+          restMinutesPerTeam: restToMinutes(),
         }),
       }),
     onSuccess: () => {
@@ -157,8 +161,22 @@ function GenerateModal({ tid, onClose }: { tid: string; onClose: () => void }) {
               <input type="number" min={10} className={inputCls} value={duration} onChange={(e) => setDuration(e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>Repos par équipe (min)</label>
-              <input type="number" min={0} className={inputCls} value={rest} onChange={(e) => setRest(e.target.value)} />
+              <label className={labelCls}>Repos par équipe</label>
+              <div className="flex gap-2">
+                <input type="number" min={0} className={`${inputCls} flex-1`} value={rest} onChange={(e) => setRest(e.target.value)} />
+                <select
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"
+                  value={restUnit}
+                  onChange={(e) => setRestUnit(e.target.value as 'min' | 'h' | 'j')}
+                >
+                  <option value="min">minutes</option>
+                  <option value="h">heures</option>
+                  <option value="j">jours</option>
+                </select>
+              </div>
+              {restUnit !== 'min' && Number(rest) > 0 && (
+                <p className="mt-1 text-[11px] text-muted">= {restToMinutes().toLocaleString('fr-FR')} min</p>
+              )}
             </div>
           </div>
           {error && <div className="rounded-xl bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</div>}
