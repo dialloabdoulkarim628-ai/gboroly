@@ -202,10 +202,16 @@ export default function DashboardHome() {
                   </p>
                 </div>
                 <Link
-                  href={`/t/${data.featuredTournament.slug}`}
+                  href={
+                    ['PUBLISHED', 'ONGOING', 'COMPLETED', 'ARCHIVED'].includes(data.featuredTournament.status)
+                      ? `/t/${data.featuredTournament.slug}`
+                      : `/dashboard/tournois/${data.featuredTournament.id}`
+                  }
                   className="hidden rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/20 sm:block"
                 >
-                  Voir la page →
+                  {['PUBLISHED', 'ONGOING', 'COMPLETED', 'ARCHIVED'].includes(data.featuredTournament.status)
+                    ? 'Voir la page →'
+                    : 'Gérer →'}
                 </Link>
               </div>
               {/* Stepper */}
