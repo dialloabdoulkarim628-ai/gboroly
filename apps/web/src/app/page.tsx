@@ -1,319 +1,577 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-/* ─────────── Icônes ─────────── */
+/* ─────────── Icônes (SVG, jamais d'emoji) ─────────── */
 const P = {
   check: <path d="M20 6 9 17l-5-5" />,
-  bolt: <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" />,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
   calendar: (<><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18M8 2v4M16 2v4" /></>),
   trophy: (<><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3M9 20h6M12 14v6" /></>),
-  share: (<><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5" /></>),
-  bell: (<><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" /></>),
-  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  users: (<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6" /></>),
+  pin: (<><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></>),
+  wallet: (<><rect x="3" y="6" width="18" height="14" rx="2.5" /><path d="M3 10h18M16 15h2M7 3.5 15 6" /></>),
   star: <path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.6.9-5.5-4-3.9L9.5 8Z" />,
-  play: <path d="M6 4l14 8-14 8V4Z" />,
-  live: (<><circle cx="12" cy="12" r="3" /><path d="M5 12a7 7 0 0 1 14 0M8.5 15.5a3.5 3.5 0 0 1 7 0" /></>),
+  megaphone: (<><path d="M3 10v4a1 1 0 0 0 1 1h3l6 4V5L7 9H4a1 1 0 0 0-1 1Z" /><path d="M17 8.5a5 5 0 0 1 0 7" /></>),
+  chart: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  play: <path d="M7 4.5v15l12.5-7.5L7 4.5Z" />,
+  live: (<><circle cx="12" cy="12" r="2.5" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" /></>),
+  link: <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />,
 };
-function Ic({ d, className = 'h-5 w-5' }: { d: keyof typeof P; className?: string }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className}>{P[d]}</svg>;
-}
-
-/* ─────────── Mot rotatif ─────────── */
-function Rotating({ words, className = '' }: { words: string[]; className?: string }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % words.length), 2200);
-    return () => clearInterval(t);
-  }, [words.length]);
-  return <span className={`inline-block transition-all duration-500 ${className}`} key={i}>{words[i]}</span>;
-}
-
-/* ─────────── Puce “fait” ─────────── */
-function Feat({ children }: { children: React.ReactNode }) {
+type IconName = keyof typeof P;
+function Ic({ d, className = 'h-5 w-5' }: { d: IconName; className?: string }) {
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-field/15 text-field">
-        <Ic d="check" className="h-3.5 w-3.5" />
-      </span>
-      <span className="text-sm leading-relaxed text-ink/80">{children}</span>
-    </li>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      {P[d]}
+    </svg>
   );
 }
 
-/* ─────────── Faux navigateur (mockup) ─────────── */
-function Window({ title, children }: { title: string; children: React.ReactNode }) {
+/** Anneau de focus clavier, identique partout. */
+const ring = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-light focus-visible:ring-offset-2';
+const ringDark = `${ring} focus-visible:ring-offset-[#03060F]`;
+
+const FILM_SECONDS = 44;
+const DEMO_SLUG = '/t/maracana-cup-abidjan-2026';
+
+/* ─────────── Le film : lecture au clic, sous-titré, pause hors écran ─────────── */
+function Film({ playSignal }: { playSignal: number }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const vid = useRef<HTMLVideoElement>(null);
+  const [started, setStarted] = useState(false);
+
+  const start = useCallback(() => {
+    const v = vid.current;
+    if (!v) return;
+    setStarted(true);
+    v.play().catch(() => {});
+  }, []);
+
+  // Le bouton « Voir le film » du hero : on amène le film à l'écran et on le lance.
+  useEffect(() => {
+    if (!playSignal) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    wrap.current?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+    start();
+  }, [playSignal, start]);
+
+  // Pause automatique quand le film sort de l'écran.
+  useEffect(() => {
+    const el = wrap.current;
+    const v = vid.current;
+    if (!el || !v) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.intersectionRatio < 0.25 && !v.paused) v.pause();
+      },
+      { threshold: [0, 0.25] },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_60px_-20px_rgba(7,27,69,0.35)]">
-      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-        <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-        <span className="ml-3 truncate text-xs text-muted">{title}</span>
+    <div ref={wrap} id="film" className="relative scroll-mt-24">
+      {/* halo */}
+      <div aria-hidden="true" className="absolute -inset-x-6 -inset-y-8 -z-10 rounded-[3rem] bg-[radial-gradient(60%_60%_at_50%_45%,rgba(45,140,255,0.28),transparent_70%)] blur-2xl" />
+      <div className="overflow-hidden rounded-2xl bg-[#03060F] ring-1 ring-white/10 sm:rounded-3xl">
+        <div className="relative aspect-video">
+          <video
+            ref={vid}
+            className="absolute inset-0 h-full w-full"
+            poster="/video/gboroly-presentation-poster.jpg"
+            preload="none"
+            playsInline
+            controls={started}
+            onEnded={() => setStarted(false)}
+          >
+            <source src="/video/gboroly-presentation.mp4" type="video/mp4" />
+            <track kind="captions" src="/video/gboroly-presentation.fr.vtt" srcLang="fr" label="Français" default />
+          </video>
+
+          {!started && (
+            <button
+              type="button"
+              onClick={start}
+              aria-label={`Lire le film de présentation de Gboroly (${FILM_SECONDS} secondes, sous-titré)`}
+              className={`group absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-gradient-to-t from-[#03060F]/80 via-transparent to-transparent sm:justify-end sm:pb-10 ${ringDark}`}
+            >
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-navy transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none sm:mb-5 sm:h-20 sm:w-20">
+                <Ic d="play" className="ml-1 h-7 w-7 fill-current sm:h-8 sm:w-8" />
+              </span>
+              <span className="hidden text-base font-semibold text-white sm:block">Regarder le film</span>
+              <span className="mt-0.5 hidden text-xs text-white/70 sm:block">{FILM_SECONDS} secondes · sous-titré</span>
+            </button>
+          )}
+        </div>
       </div>
-      <div className="p-4">{children}</div>
     </div>
   );
 }
 
+/* ─────────── Cadres d'aperçu ─────────── */
+function Browser({ src, alt, url, priority = false }: { src: string; alt: string; url: string; priority?: boolean }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_30px_80px_-30px_rgba(7,27,69,0.45)]">
+      <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5" aria-hidden="true">
+        <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+        <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+        <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+        <span className="ml-3 truncate rounded-md bg-white px-2.5 py-0.5 text-[11px] text-muted ring-1 ring-slate-200">{url}</span>
+      </div>
+      <img src={src} alt={alt} width={1600} height={1000} loading={priority ? 'eager' : 'lazy'} decoding="async" className="block h-auto w-full" />
+    </div>
+  );
+}
+
+function Phone({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  return (
+    <div className={`relative w-[200px] rounded-[2.4rem] bg-[#0B0E15] p-2 ring-1 ring-white/15 sm:w-[240px] ${className}`}>
+      <div className="overflow-hidden rounded-[2rem]">
+        <img src={src} alt={alt} width={585} height={1266} loading="lazy" decoding="async" className="block h-auto w-full" />
+      </div>
+    </div>
+  );
+}
+
+function Eyebrow({ children, tone = 'brand' }: { children: React.ReactNode; tone?: 'brand' | 'energy' | 'field' | 'dark' }) {
+  const c = {
+    brand: 'bg-brand/10 text-brand',
+    energy: 'bg-energy/10 text-[#C2410C]',
+    field: 'bg-field/10 text-[#0F7A3D]',
+    dark: 'bg-white/10 text-[#8CC1FF]',
+  }[tone];
+  return <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${c}`}>{children}</span>;
+}
+
+function Check({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${dark ? 'bg-brand-light/20 text-[#8CC1FF]' : 'bg-field/15 text-field'}`}>
+        <Ic d="check" className="h-3.5 w-3.5" />
+      </span>
+      <span className={`leading-relaxed ${dark ? 'text-white/80' : 'text-ink/80'}`}>{children}</span>
+    </li>
+  );
+}
+
+/* ─────────── Données ─────────── */
+const STEPS: { icon: IconName; title: string; text: string }[] = [
+  { icon: 'trophy', title: 'Créez le tournoi', text: 'Nom, dates, lieu et format : poules puis phases finales.' },
+  { icon: 'users', title: 'Inscrivez les équipes', text: 'En ligne ou par vous. Validez-les en un geste.' },
+  { icon: 'calendar', title: 'Générez le calendrier', text: 'Sur un jour ou plusieurs semaines, terrain par terrain.' },
+  { icon: 'live', title: 'Faites vivre le tournoi', text: 'Scores en direct, classements et bracket à jour.' },
+];
+
+const BEFORE = [
+  'Les listes d’équipes sur papier',
+  'Les scores notés… puis perdus',
+  'Le calendrier refait à la main au moindre retard',
+  '« On joue où ? » toute la journée sur WhatsApp',
+];
+const AFTER = [
+  'Inscriptions en ligne, équipes validées en un geste',
+  'Un score saisi : classement et bracket à jour',
+  'Un calendrier généré automatiquement',
+  'Un seul lien : tout le monde suit en direct',
+];
+
+/* Mini-aperçus des cartes hautes (à côté de Paiements) */
+const TEAMS_PREVIEW = (
+  <ul className="space-y-2" aria-hidden="true">
+    {['FC Abobo', 'Espoir de Marcory', 'AS Cocody'].map((t) => (
+      <li key={t} className="flex items-center justify-between rounded-xl bg-canvas px-3 py-2 text-sm font-medium text-ink">
+        {t}
+        <span className="rounded-full bg-field/15 px-2 py-0.5 text-[11px] font-semibold text-[#0F7A3D]">Validée</span>
+      </li>
+    ))}
+  </ul>
+);
+const VENUES_PREVIEW = (
+  <ul className="space-y-2" aria-hidden="true">
+    {[
+      ['09:00', 'Terrain A', 'FC Adjamé – Racing'],
+      ['09:00', 'Terrain B', 'AS Cocody – Koumassi'],
+      ['11:00', 'Terrain A', 'FC Abobo – Plateau'],
+    ].map(([h, v, m]) => (
+      <li key={v + h} className="flex items-center gap-3 rounded-xl bg-canvas px-3 py-2 text-sm">
+        <span className="font-semibold tabular-nums text-brand">{h}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-ink">{m}</span>
+          <span className="block text-xs text-muted">{v}</span>
+        </span>
+      </li>
+    ))}
+  </ul>
+);
+
+const TOOLS: { icon: IconName; title: string; text: string; tone: string; preview?: React.ReactNode }[] = [
+  { icon: 'users', title: 'Équipes & joueurs', text: 'Inscriptions, validation et effectifs complets, au même endroit.', tone: 'bg-brand/10 text-brand', preview: TEAMS_PREVIEW },
+  { icon: 'pin', title: 'Terrains', text: 'Plusieurs terrains, créneaux et temps de repos par équipe.', tone: 'bg-field/10 text-field', preview: VENUES_PREVIEW },
+  { icon: 'star', title: 'Sponsors', text: 'Vos partenaires mis en avant sur la page publique.', tone: 'bg-victory/15 text-[#B45309]' },
+  { icon: 'megaphone', title: 'Communications', text: 'Annonces et notifications envoyées aux équipes.', tone: 'bg-energy/10 text-[#C2410C]' },
+  { icon: 'chart', title: 'Statistiques', text: 'Meilleurs buteurs, résultats et progression du tournoi.', tone: 'bg-navy/10 text-navy' },
+];
+
+/* ─────────── Page ─────────── */
 export default function Landing() {
+  const [scrolled, setScrolled] = useState(false);
+  const [playSignal, setPlaySignal] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-ink">
+      <a href="#contenu" className={`sr-only z-[60] rounded-lg bg-white px-4 py-2 font-semibold text-navy focus:not-sr-only focus:fixed focus:left-4 focus:top-4 ${ring}`}>
+        Aller au contenu
+      </a>
+
       {/* ─────────── NAV ─────────── */}
-      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/85 backdrop-blur">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link href="/"><img src="/logo-gboroly-horizontal.png" alt="Gboroly" className="h-11 w-auto" /></Link>
-          <div className="hidden items-center gap-7 text-sm font-medium text-ink/70 md:flex">
-            <a href="#fonctionnalites" className="hover:text-ink">Fonctionnalités</a>
-            <Link href="/discover" className="hover:text-ink">Découvrir</Link>
-            <a href="#tarifs" className="hover:text-ink">Tarifs</a>
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-colors duration-200 motion-reduce:transition-none ${
+          scrolled ? 'border-b border-slate-200/80 bg-white/90 backdrop-blur' : 'border-b border-transparent bg-transparent'
+        }`}
+      >
+        <nav aria-label="Navigation principale" className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-[72px] sm:px-6">
+          <Link href="/" className={`rounded-lg ${ring}`} aria-label="Gboroly, accueil">
+            <img src={scrolled ? '/logo-gboroly-horizontal.png' : '/logo-gboroly-horizontal-blanc.png'} alt="Gboroly" width={160} height={48} className="h-8 w-auto sm:h-10" />
+          </Link>
+          <div className={`hidden items-center gap-1 text-sm font-medium lg:flex ${scrolled ? 'text-ink/70' : 'text-white/75'}`}>
+            {[
+              ['Le film', '#film'],
+              ['Comment ça marche', '#etapes'],
+              ['Fonctionnalités', '#fonctionnalites'],
+            ].map(([l, h]) => (
+              <a key={h} href={h} className={`rounded-lg px-3 py-2 transition-colors ${scrolled ? 'hover:text-ink' : 'hover:text-white'} ${ring}`}>{l}</a>
+            ))}
+            <Link href="/discover" className={`rounded-lg px-3 py-2 transition-colors ${scrolled ? 'hover:text-ink' : 'hover:text-white'} ${ring}`}>Découvrir les tournois</Link>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="rounded-xl px-4 py-2 text-sm font-semibold text-ink/80 hover:bg-slate-100">Se connecter</Link>
-            <Link href="/login" className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy-800">Commencer</Link>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link
+              href="/login"
+              className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold transition-colors sm:px-4 ${scrolled ? 'text-ink/80 hover:bg-slate-100' : 'text-white/85 hover:bg-white/10'} ${ring}`}
+            >
+              Se connecter
+            </Link>
+            <Link href="/login" className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-xl bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-dark ${ring}`}>
+              Commencer
+            </Link>
           </div>
         </nav>
       </header>
 
-      {/* ─────────── HERO ─────────── */}
-      <section className="relative overflow-hidden">
-        <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-brand/5 blur-3xl" />
-        <div className="absolute -left-40 top-40 h-96 w-96 rounded-full bg-energy/5 blur-3xl" />
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 lg:grid-cols-2 lg:items-center lg:py-24">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-brand/5 px-3.5 py-1.5 text-xs font-semibold text-brand">
-              <Ic d="star" className="h-3.5 w-3.5 text-victory" /> The African Sports Tournament OS
-            </span>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] text-navy sm:text-5xl">
-              Organisez des tournois que{' '}
-              <span className="relative inline-block">
-                <span className="absolute inset-x-0 bottom-1 -z-0 h-4 -rotate-1 bg-victory/40" />
-                <span className="font-script relative z-10 pr-1 text-[1.08em] text-brand">
-                  <Rotating words={['les équipes', 'les joueurs', 'les organisateurs', 'les supporters']} />
-                </span>
-              </span>{' '}
-              vont adorer
-            </h1>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted">
-              Le logiciel qui digitalise vos tournois de A à Z — inscriptions, calendrier, scores,
-              classements et paiements. Vous gagnez du temps, tout le monde reste informé.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 font-semibold text-white shadow-lg shadow-brand/25 hover:bg-brand-dark">
-                Commencer gratuitement <Ic d="arrow" className="h-4 w-4" />
-              </Link>
-              <Link href="/discover" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-6 py-3.5 font-semibold text-ink hover:bg-slate-50">
-                Découvrir les tournois
-              </Link>
-            </div>
-            <p className="mt-4 text-xs text-muted">Gratuit pour l'organisateur au démarrage · FCFA & Mobile Money · pensé pour l'Afrique</p>
+      <main id="contenu">
+        {/* ─────────── HERO + FILM ─────────── */}
+        <section className="relative overflow-hidden bg-[#03060F] text-white">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <div className="absolute left-1/2 top-[-20%] h-[640px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(18,105,211,0.35),transparent)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(70%_60%_at_50%_30%,black,transparent)]" />
           </div>
 
-          {/* Image */}
-          <div className="relative">
-            <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-gradient-to-br from-brand/20 to-energy/20 blur-2xl" />
-            <img
-              src="/hero.png"
-              alt="Tournoi de Maracana à Abidjan"
-              className="aspect-[4/3] w-full rounded-3xl object-cover shadow-[0_25px_70px_-25px_rgba(7,27,69,0.5)] ring-1 ring-black/5"
-            />
-            <div className="absolute bottom-4 left-4 flex items-center gap-2.5 rounded-2xl bg-white/95 px-3.5 py-2.5 shadow-lg backdrop-blur">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy text-sm font-extrabold text-white">M</span>
-              <div>
-                <div className="text-xs font-bold text-ink">Maracana Cup Abidjan</div>
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-field">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-field" /> En direct · 8 équipes
+          <div className="relative mx-auto max-w-4xl px-4 pb-14 pt-32 text-center sm:px-6 sm:pt-40">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-white/80">
+              <span className="h-1.5 w-1.5 rounded-full bg-energy" aria-hidden="true" /> The African Sports Tournament OS
+            </span>
+            <h1 className="mt-6 text-[2.5rem] font-extrabold leading-[1.08] tracking-tight sm:text-6xl lg:text-7xl">
+              Vos tournois de Maracana,{' '}
+              <span className="font-script whitespace-nowrap pr-1 text-[1.06em] font-semibold text-brand-light">enfin simples.</span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+              Inscriptions, calendrier, scores en direct, classements et paiements&nbsp;: Gboroly digitalise votre tournoi
+              de l’inscription à la finale.
+            </p>
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/login"
+                className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-brand px-7 font-semibold text-white transition-colors hover:bg-brand-dark sm:w-auto ${ringDark}`}
+              >
+                Créer mon tournoi gratuitement <Ic d="arrow" className="h-4 w-4" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setPlaySignal((n) => n + 1)}
+                className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2.5 rounded-xl border border-white/20 px-6 font-semibold text-white transition-colors hover:bg-white/10 sm:w-auto ${ringDark}`}
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-navy">
+                  <Ic d="play" className="ml-0.5 h-3 w-3 fill-current" />
+                </span>
+                Voir le film · {FILM_SECONDS} s
+              </button>
+            </div>
+            <p className="mt-5 text-xs text-white/55">Gratuit pour démarrer · FCFA &amp; Mobile Money · Conçu en Côte d’Ivoire</p>
+          </div>
+
+          <div className="relative mx-auto max-w-5xl px-4 pb-20 sm:px-6 sm:pb-28">
+            <Film playSignal={playSignal} />
+          </div>
+        </section>
+
+        {/* ─────────── AVANT / APRÈS ─────────── */}
+        <section aria-labelledby="fini-titre" className="bg-white py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="reveal mx-auto max-w-2xl text-center">
+              <Eyebrow tone="energy">Le jour J</Eyebrow>
+              <h2 id="fini-titre" className="mt-4 text-3xl font-extrabold tracking-tight text-navy sm:text-5xl">
+                Fini le «&nbsp;on joue où&nbsp;?&nbsp;»
+              </h2>
+              <p className="mt-4 text-lg text-muted">Un tournoi, c’est une fête. Pas une course contre la montre pour l’organisateur.</p>
+            </div>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2">
+              <div className="reveal rounded-3xl border border-slate-200 bg-canvas p-6 sm:p-8">
+                <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-muted">Avant</h3>
+                <ul className="mt-5 space-y-4">
+                  {BEFORE.map((t) => (
+                    <li key={t} className="flex items-start gap-3 text-ink/70">
+                      <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+                        <Ic d="x" className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="leading-relaxed line-through decoration-slate-300">{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="reveal rounded-3xl bg-navy p-6 text-white sm:p-8">
+                <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-[#8CC1FF]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-energy" aria-hidden="true" /> Avec Gboroly
+                </h3>
+                <ul className="mt-5 space-y-4">
+                  {AFTER.map((t) => (
+                    <Check key={t} dark>{t}</Check>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────── 4 ÉTAPES ─────────── */}
+        <section id="etapes" aria-labelledby="etapes-titre" className="scroll-mt-20 border-y border-slate-100 bg-canvas py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="reveal mx-auto max-w-2xl text-center">
+              <Eyebrow>Comment ça marche</Eyebrow>
+              <h2 id="etapes-titre" className="mt-4 text-3xl font-extrabold tracking-tight text-navy sm:text-5xl">
+                De l’inscription à la{' '}
+                <span className="font-script pr-1 text-[1.06em] text-brand">finale.</span>
+              </h2>
+              <p className="mt-4 text-lg text-muted">Quatre étapes. Votre premier tournoi est prêt en quelques minutes.</p>
+            </div>
+
+            <ol className="relative mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <span aria-hidden="true" className="absolute left-[12.5%] right-[12.5%] top-7 hidden h-px bg-gradient-to-r from-brand/0 via-brand/30 to-brand/0 lg:block" />
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="reveal relative rounded-2xl border border-slate-200 bg-white p-6 text-center">
+                  <span className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-navy text-white">
+                    <Ic d={s.icon} className="h-6 w-6" />
+                    <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-energy text-xs font-bold text-white ring-4 ring-white">
+                      {i + 1}
+                    </span>
+                  </span>
+                  <h3 className="mt-5 font-bold text-ink">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{s.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ─────────── FONCTIONNALITÉS (vrais écrans) ─────────── */}
+        <section id="fonctionnalites" aria-label="Fonctionnalités" className="scroll-mt-20 bg-white py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl space-y-24 px-4 sm:space-y-32 sm:px-6">
+            {/* Calendrier */}
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14">
+              <div className="reveal">
+                <Eyebrow>Calendrier</Eyebrow>
+                <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
+                  Le calendrier se génère{' '}
+                  <span className="font-script pr-1 text-[1.06em] text-brand">tout seul.</span>
+                </h2>
+                <p className="mt-4 text-lg text-muted">Les jours, les heures, les terrains. Vous ajustez à la main si besoin.</p>
+                <ul className="mt-7 space-y-4">
+                  <Check>Sur une journée ou sur plusieurs semaines — week-ends seulement si vous voulez</Check>
+                  <Check>Plusieurs terrains en parallèle, créneaux calculés automatiquement</Check>
+                  <Check>Temps de repos par équipe en minutes, en heures ou en jours</Check>
+                </ul>
+              </div>
+              <div className="reveal">
+                <Browser src="/landing/dash-calendrier.webp" alt="Écran Calendrier de Gboroly : les matchs du samedi répartis par heure et par terrain" url="gboroly · Calendrier" />
+              </div>
+            </div>
+
+            {/* Score live */}
+            <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
+              <div className="reveal lg:order-2">
+                <Eyebrow tone="energy">Score en direct</Eyebrow>
+                <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
+                  Saisissez un score. Tout se met à jour,{' '}
+                  <span className="font-script pr-1 text-[1.06em] text-brand">instantanément.</span>
+                </h2>
+                <p className="mt-4 text-lg text-muted">Plus de tableau à recopier : Gboroly applique vos règles de départage.</p>
+                <ul className="mt-7 space-y-4">
+                  <Check>Classements des poules recalculés à chaque résultat</Check>
+                  <Check>Phases finales et bracket remplis automatiquement</Check>
+                  <Check>Passez d’un tour à l’autre en un clic</Check>
+                </ul>
+              </div>
+              <div className="reveal relative lg:order-1">
+                <Browser src="/landing/dash-classements.webp" alt="Écran Classements de Gboroly : tableaux des groupes A et B avec points et différence de buts" url="gboroly · Classements" />
+                <div className="absolute -bottom-6 right-4 hidden items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_20px_50px_-20px_rgba(7,27,69,0.45)] sm:flex">
+                  <span className="text-sm font-semibold text-ink">FC Abobo</span>
+                  <span className="rounded-lg bg-navy px-2.5 py-1 text-sm font-extrabold tabular-nums text-white">2 – 0</span>
+                  <span className="text-sm font-semibold text-ink">Espoir de Marcory</span>
+                  <span className="rounded-full bg-field/15 px-2 py-0.5 text-[11px] font-semibold text-[#0F7A3D]">Terminé</span>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Aperçu produit */}
-        <div className="mx-auto max-w-5xl px-5 pb-16">
-          <Window title="gboroly.app · Maracana Cup Abidjan 2026">
-            <div className="rounded-xl bg-navy p-4 text-white">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-lg font-extrabold">M</span>
-                <div><div className="flex items-center gap-2"><span className="rounded-full bg-field px-2 py-0.5 text-[10px] font-semibold">En cours</span><span className="text-[11px] text-white/60">Maracana</span></div><div className="font-bold">Maracana Cup Abidjan 2026</div></div>
-                <span className="ml-auto hidden text-xs text-white/60 sm:block">8 équipes · Abidjan</span>
-              </div>
+        {/* ─────────── SUPPORTERS (mobile) ─────────── */}
+        <section aria-labelledby="supporters-titre" className="relative overflow-hidden bg-[#03060F] py-20 text-white sm:py-28">
+          <div aria-hidden="true" className="pointer-events-none absolute right-[-10%] top-1/2 h-[600px] w-[600px] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(18,105,211,0.3),transparent)]" />
+          <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-4 sm:px-6 lg:grid-cols-2">
+            <div className="reveal">
+              <Eyebrow tone="dark">Supporters</Eyebrow>
+              <h2 id="supporters-titre" className="mt-4 text-3xl font-extrabold tracking-tight sm:text-5xl">
+                Sur chaque{' '}
+                <span className="font-script pr-1 text-[1.06em] text-brand-light">téléphone.</span>
+              </h2>
+              <p className="mt-4 text-lg text-white/70">
+                Chaque tournoi a sa page publique. Joueurs, familles et supporters suivent tout en direct — sans compte, sans application à installer.
+              </p>
+              <ul className="mt-7 space-y-4">
+                <Check dark>Scores, classements et phases finales mis à jour en temps réel</Check>
+                <Check dark>Calendrier des matchs, terrain par terrain</Check>
+                <Check dark>Inscription des équipes directement depuis la page</Check>
+              </ul>
+              <Link
+                href={DEMO_SLUG}
+                className={`mt-9 inline-flex min-h-[48px] max-w-full items-center gap-2.5 rounded-full border border-white/15 bg-white/5 px-5 text-sm font-medium text-white transition-colors hover:bg-white/10 ${ringDark}`}
+              >
+                <Ic d="link" className="h-4 w-4 flex-shrink-0 text-brand-light" />
+                <span className="truncate">Un seul lien suffit — voir un tournoi en direct</span>
+                <Ic d="arrow" className="h-4 w-4 flex-shrink-0" />
+              </Link>
             </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              {[['Groupe A', 'FC Abobo', '9'], ['Groupe A', 'Espoir Marcory', '4'], ['Groupe B', 'AS Cocody', '7']].map(([g, e, p]) => (
-                <div key={e} className="rounded-xl border border-slate-100 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-muted">{g}</div>
-                  <div className="mt-1 flex items-center justify-between"><span className="text-sm font-semibold text-ink">{e}</span><span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-bold text-brand">{p} pts</span></div>
+            <div className="reveal relative flex justify-center gap-4 sm:gap-6">
+              <Phone src="/landing/mobile-public.webp" alt="Page publique d’un tournoi sur mobile : statistiques, prochains matchs et derniers résultats" className="mt-10" />
+              <Phone src="/landing/mobile-standings.webp" alt="Classement des groupes affiché sur mobile" className="hidden min-[420px]:block" />
+            </div>
+          </div>
+        </section>
+
+        {/* ─────────── BOÎTE À OUTILS (bento) ─────────── */}
+        <section aria-labelledby="outils-titre" className="bg-canvas py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="reveal mx-auto max-w-2xl text-center">
+              <Eyebrow tone="field">Tout-en-un</Eyebrow>
+              <h2 id="outils-titre" className="mt-4 text-3xl font-extrabold tracking-tight text-navy sm:text-5xl">
+                Tout votre tournoi, au même endroit.
+              </h2>
+              <p className="mt-4 text-lg text-muted">Fini les cahiers, les fichiers et les dix groupes WhatsApp.</p>
+            </div>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              {/* Paiements — carte large */}
+              <div className="reveal flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 md:col-span-2 md:row-span-2">
+                <div>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-energy/10 text-[#C2410C]"><Ic d="wallet" /></span>
+                  <h3 className="mt-4 text-2xl font-bold text-ink">Paiements des inscriptions</h3>
+                  <p className="mt-2 max-w-md text-muted">Suivez chaque inscription payée, en francs CFA, quel que soit le moyen de paiement.</p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {[
+                      ['Espèces', 'bg-field'],
+                      ['Wave', 'bg-[#1DC3FF]'],
+                      ['Orange Money', 'bg-energy'],
+                    ].map(([l, c]) => (
+                      <span key={l} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-ink">
+                        <span className={`h-2.5 w-2.5 rounded-full ${c}`} aria-hidden="true" /> {l}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200" aria-hidden="true">
+                  <img src="/landing/dash-paiements.webp" alt="" width={1600} height={1000} loading="lazy" decoding="async" className="block h-auto w-full" />
+                </div>
+              </div>
+
+              {TOOLS.map((t) => (
+                <div key={t.title} className="reveal flex flex-col rounded-3xl border border-slate-200 bg-white p-6">
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${t.tone}`}><Ic d={t.icon} /></span>
+                  <h3 className="mt-4 font-bold text-ink">{t.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{t.text}</p>
+                  {t.preview && <div className="mt-auto pt-5">{t.preview}</div>}
                 </div>
               ))}
             </div>
-          </Window>
-        </div>
-      </section>
-
-      {/* ─────────── BANDEAU SPORTS ─────────── */}
-      <section className="border-y border-slate-100 bg-canvas py-16">
-        <div className="mx-auto max-w-4xl px-5 text-center">
-          <h2 className="text-3xl font-extrabold text-navy sm:text-4xl">
-            Digitalisez votre prochain tournoi de{' '}
-            <span className="font-script pr-1 text-[1.08em] text-brand">Maracana</span>
-          </h2>
-          <p className="mt-4 text-lg text-muted">Conçu pour le Maracana — de la phase de poules aux phases finales, avec vos règles de départage.</p>
-          <Link href="/login" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 font-semibold text-white shadow-lg shadow-brand/25 hover:bg-brand-dark">
-            Commencer gratuitement <Ic d="arrow" className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* ─────────── GAGNEZ DU TEMPS ─────────── */}
-      <section id="fonctionnalites" className="mx-auto max-w-6xl px-5 py-20">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand"><Ic d="bolt" className="h-3.5 w-3.5" /> Gagnez du temps</span>
-            <h2 className="mt-4 text-3xl font-extrabold text-navy sm:text-4xl">Gardez le contrôle, sans stress</h2>
-            <p className="mt-3 text-muted">Rendez le jour J serein, sans course contre la montre.</p>
-            <ul className="mt-6 space-y-4">
-              <Feat>Générez le calendrier automatiquement, ajustez-le à la main</Feat>
-              <Feat>Saisissez les scores — le classement et le bracket se mettent à jour tout seuls</Feat>
-              <Feat>Passez d'un tour à l'autre en un clic</Feat>
-              <Feat>Faites vos modifications vous-même, instantanément — sans dépendre de personne</Feat>
-            </ul>
           </div>
-          {/* Bracket mockup */}
-          <Window title="Phases finales — mise à jour en direct">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Demi-finales</div>
-                {[['FC Abobo', 'Espoir Marcory'], ['AS Cocody', 'Étoile Yop.']].map((m, k) => (
-                  <div key={k} className="mb-3 rounded-xl border border-slate-100 p-2.5">
-                    <div className="flex items-center justify-between rounded-lg bg-field/10 px-2 py-1.5 font-semibold text-field"><span>{m[0]}</span><span>✓</span></div>
-                    <div className="mt-1 px-2 py-1.5 text-ink/70">{m[1]}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col justify-center">
-                <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted">Finale</div>
-                <div className="rounded-xl border border-slate-100 p-2.5">
-                  <div className="flex items-center justify-between rounded-lg bg-field/10 px-2 py-1.5 font-semibold text-field"><span>FC Abobo</span><span>✓</span></div>
-                  <div className="mt-1 px-2 py-1.5 text-ink/70">AS Cocody</div>
-                </div>
-                <button className="mt-3 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white">Saisir le score</button>
-              </div>
+        </section>
+
+        {/* ─────────── CTA FINAL ─────────── */}
+        <section aria-labelledby="cta-titre" className="relative overflow-hidden bg-[#03060F] text-white">
+          <img src="/hero.png" alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-30" />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-[#03060F] via-[#03060F]/70 to-[#03060F]" />
+          <div className="reveal relative mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 sm:py-32">
+            <img src="/logo-gboroly-horizontal-blanc.png" alt="" width={200} height={59} className="mx-auto h-12 w-auto" />
+            <h2 id="cta-titre" className="mt-8 text-3xl font-extrabold tracking-tight sm:text-5xl">
+              Votre prochain tournoi{' '}
+              <span className="font-script pr-1 text-[1.06em] text-brand-light">commence ici.</span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-white/70">Créez votre premier tournoi en quelques minutes. Gratuit pour démarrer.</p>
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/login"
+                className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-brand px-7 font-semibold text-white transition-colors hover:bg-brand-dark sm:w-auto ${ringDark}`}
+              >
+                Créer mon tournoi gratuitement <Ic d="arrow" className="h-4 w-4" />
+              </Link>
+              <Link
+                href={DEMO_SLUG}
+                className={`inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-6 font-semibold text-white transition-colors hover:bg-white/10 sm:w-auto ${ringDark}`}
+              >
+                Voir un tournoi en direct
+              </Link>
             </div>
-          </Window>
-        </div>
-      </section>
-
-      {/* ─────────── PERSONNALISEZ ─────────── */}
-      <section className="bg-canvas py-20">
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 lg:grid-cols-2 lg:items-center">
-          <Window title="Page publique du tournoi">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-xl bg-navy p-3 text-white">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-energy text-sm font-bold">M</span>
-                <div className="text-sm font-bold">Maracana Cup Abidjan 2026</div>
-                <button className="ml-auto flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1 text-xs"><Ic d="share" className="h-3.5 w-3.5" /> Partager</button>
-              </div>
-              <div className="flex gap-2">
-                {['Accueil', 'Matchs', 'Classement', 'Équipes'].map((t, k) => (
-                  <span key={t} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${k === 0 ? 'bg-brand text-white' : 'bg-slate-100 text-muted'}`}>{t}</span>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {['Règles', 'Sponsors', 'Bannière'].map((t) => (
-                  <div key={t} className="rounded-lg border border-dashed border-slate-200 p-3 text-center text-xs text-muted">{t}</div>
-                ))}
-              </div>
-            </div>
-          </Window>
-          <div className="lg:order-first">
-            <span className="inline-flex items-center gap-2 rounded-full bg-energy/10 px-3 py-1 text-xs font-semibold text-energy"><Ic d="share" className="h-3.5 w-3.5" /> Partagez</span>
-            <h2 className="mt-4 text-3xl font-extrabold text-navy sm:text-4xl">Personnalisez votre événement</h2>
-            <p className="mt-3 text-muted">Partager les infos de votre tournoi n'a jamais été aussi simple.</p>
-            <ul className="mt-6 space-y-4">
-              <Feat>Une page publique par tournoi : règles, sponsors, actualités</Feat>
-              <Feat>À vos couleurs — bannière et branding personnalisés</Feat>
-              <Feat>Partagez en un lien (ou QR code) — équipes et supporters suivent tout</Feat>
-              <Feat>Mise à jour en direct : scores, classements, phases finales</Feat>
-            </ul>
+            <p className="mt-8 text-sm font-semibold tracking-[0.2em] text-victory">ORGANISEZ • GÉREZ • FAITES VIVRE</p>
           </div>
-        </div>
-      </section>
-
-      {/* ─────────── FINI LE “ON JOUE OÙ” ─────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-field/10 px-3 py-1 text-xs font-semibold text-field"><Ic d="bell" className="h-3.5 w-3.5" /> Restez informé</span>
-            <h2 className="mt-4 text-3xl font-extrabold text-navy sm:text-4xl">Fini le « On joue où&nbsp;? »</h2>
-            <p className="mt-3 text-muted">Offrez à tous — joueurs, entraîneurs, parents, supporters — une vision claire de l'action.</p>
-            <ul className="mt-6 space-y-4">
-              <Feat>Fini les textos de dernière minute et les matchs manqués</Feat>
-              <Feat>Calendrier accessible et mises à jour en direct</Feat>
-              <Feat>Suivez le tournoi, sur place ou à distance</Feat>
-            </ul>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { d: 'live' as const, t: 'En direct', s: 'Scores mis à jour en temps réel', c: 'text-energy bg-energy/10' },
-              { d: 'calendar' as const, t: 'Calendrier', s: 'Prochains matchs, heures, terrains', c: 'text-brand bg-brand/10' },
-              { d: 'trophy' as const, t: 'Classements', s: 'Poules, bracket, meilleurs buteurs', c: 'text-victory bg-victory/15' },
-              { d: 'share' as const, t: 'Partage', s: 'Un lien, tout le monde suit', c: 'text-field bg-field/10' },
-            ].map((f) => (
-              <div key={f.t} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
-                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${f.c}`}><Ic d={f.d} /></span>
-                <div className="mt-3 font-bold text-ink">{f.t}</div>
-                <div className="mt-1 text-sm text-muted">{f.s}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────── CTA FINAL ─────────── */}
-      <section id="tarifs" className="px-5 py-16">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-navy px-8 py-14 text-center text-white">
-          <h2 className="text-3xl font-extrabold sm:text-4xl">Prêt à faire vivre vos tournois&nbsp;?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/70">Créez votre premier tournoi en quelques minutes. Gratuit pour démarrer.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/login" className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 font-semibold text-white shadow-lg shadow-brand/30 hover:bg-brand-dark">
-              Commencer gratuitement <Ic d="arrow" className="h-4 w-4" />
-            </Link>
-            <Link href="/t/maracana-cup-abidjan-2026" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-6 py-3.5 font-semibold text-white hover:bg-white/10">
-              <Ic d="play" className="h-4 w-4" /> Voir une démo
-            </Link>
-          </div>
-          <p className="mt-5 text-sm font-semibold tracking-wide text-victory">ORGANISEZ • GÉREZ • FAITES VIVRE</p>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* ─────────── FOOTER ─────────── */}
       <footer className="border-t border-slate-100 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 md:flex-row md:items-start md:justify-between">
           <div>
-            <img src="/logo-gboroly-horizontal.png" alt="Gboroly" className="h-11 w-auto" />
-            <p className="mt-3 max-w-xs text-sm text-muted">Le système d'exploitation des tournois sportifs africains. De l'inscription à la finale.</p>
+            <img src="/logo-gboroly-horizontal.png" alt="Gboroly" width={160} height={49} className="h-10 w-auto" />
+            <p className="mt-3 max-w-xs text-sm text-muted">Le système d’exploitation des tournois sportifs africains. De l’inscription à la finale.</p>
           </div>
-          {[
-            { h: 'Produit', l: [['Fonctionnalités', '#fonctionnalites'], ['Découvrir', '/discover'], ['Se connecter', '/login']] },
-            { h: 'Ressources', l: [['Guides', '#'], ['Support', '#'], ['Statut', '#']] },
-            { h: 'Légal', l: [['Confidentialité', '#'], ['Conditions', '#'], ['Mentions légales', '#']] },
-          ].map((col) => (
-            <div key={col.h}>
-              <div className="text-sm font-bold text-ink">{col.h}</div>
-              <ul className="mt-3 space-y-2 text-sm text-muted">
-                {col.l.map(([label, href]) => (
-                  <li key={label}><Link href={href} className="hover:text-ink">{label}</Link></li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <nav aria-label="Pied de page">
+            <ul className="grid grid-cols-2 gap-x-10 gap-y-1 text-sm text-muted">
+              {[
+                ['Le film', '#film'],
+                ['Comment ça marche', '#etapes'],
+                ['Fonctionnalités', '#fonctionnalites'],
+                ['Découvrir les tournois', '/discover'],
+                ['Se connecter', '/login'],
+                ['Créer un compte', '/login'],
+              ].map(([label, href]) => (
+                <li key={label}>
+                  <Link href={href} className={`inline-flex min-h-[40px] items-center rounded hover:text-ink ${ring}`}>{label}</Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
         </div>
         <div className="border-t border-slate-100">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-5 py-5 text-xs text-muted sm:flex-row">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-muted sm:flex-row sm:px-6">
             <span>© {new Date().getFullYear()} Gboroly. Tous droits réservés.</span>
-            <span>Fièrement conçu en Côte d'Ivoire 🇨🇮</span>
+            <span>Fièrement conçu en Côte d’Ivoire</span>
           </div>
         </div>
       </footer>
